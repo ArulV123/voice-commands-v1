@@ -1,0 +1,3531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zippy — The Bionic Arm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#faf9f6;--panel:#f0ece2;--ink:#15181b;--ink-dim:#5b5f63;
+  --rust:#c14a2e;--rust-dim:#a53f27;--line:#d8d2c2;--line-strong:#b8b09a;--green:#1f8b4c;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;overflow-x:hidden;}
+::selection{background:var(--rust);color:var(--paper);}
+img{max-width:100%;display:block;}
+.qt-no-scroll{overflow:hidden !important;}
+
+/* ---------- overlay / modal shell ---------- */
+.qt-modal-overlay{
+  position:fixed;inset:0;z-index:600;background:rgba(250,249,246,.96);
+  display:flex;align-items:stretch;justify-content:stretch;padding:0;overflow:hidden;
+  width:100vw;height:100vh;
+}
+.qt-modal{
+  background:var(--paper);display:flex;flex-direction:column;overflow:hidden;
+  animation:qtPop .25s ease;position:relative;
+  width:100vw;height:100vh;max-width:none;max-height:none;margin:0;border:0;border-radius:0;box-shadow:none;
+}
+@keyframes qtPop{from{opacity:0;transform:translateY(14px) scale(.98);}to{opacity:1;transform:translateY(0) scale(1);}}
+.qt-voice-shell{position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-height:0;overflow:hidden;}
+
+/* ---------- header ---------- */
+.qt-voice-head{position:relative;z-index:10;flex:0 0 auto;padding:18px 24px 0;border-bottom:1px solid var(--line);background:var(--paper);}
+.qt-voice-head-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;}
+.qt-voice-head-title{display:flex;align-items:center;gap:12px;min-width:0;}
+.qt-z-badge{width:34px;height:34px;border-radius:50%;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;flex-shrink:0;}
+.qt-voice-head-title h4{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:16px;color:var(--ink);}
+.qt-voice-head-title span{display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--green);letter-spacing:.05em;text-transform:uppercase;margin-top:2px;}
+.qt-chat-close{position:relative;z-index:100;cursor:pointer;pointer-events:auto;border:1px solid var(--line-strong);background:none;color:var(--ink);width:34px;height:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;font-size:18px;}
+.qt-chat-close:hover{border-color:var(--ink);}
+
+/* sign-in details chip */
+.zv-user{display:flex;align-items:center;gap:10px;margin-left:auto;min-width:0;padding:5px 12px 5px 6px;border:1px solid var(--line);background:#fff;}
+.zv-user-av{width:30px;height:30px;border-radius:50%;overflow:hidden;background:var(--rust);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;flex-shrink:0;}
+.zv-user-av img{width:100%;height:100%;object-fit:cover;}
+.zv-user-txt{min-width:0;display:flex;flex-direction:column;}
+.zv-user-txt b{font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;}
+.zv-user-txt small{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--ink-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;}
+
+/* connection indicator */
+.zv-connection-status{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--line);background:var(--paper);color:var(--ink-dim);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;}
+.zv-connection-dot{width:7px;height:7px;border-radius:50%;background:var(--line-strong);flex-shrink:0;}
+.zv-connection-status.online{color:var(--green);border-color:rgba(31,139,76,.35);}
+.zv-connection-status.online .zv-connection-dot{background:var(--green);}
+.zv-connection-status.offline{color:var(--rust);border-color:rgba(193,74,46,.35);}
+.zv-connection-status.offline .zv-connection-dot{background:var(--rust);}
+
+/* ---------- tabs / panels ---------- */
+.qt-voice-tabs{display:flex;}
+.qt-voice-tab{flex:1;border:0;border-bottom:2px solid transparent;background:none;color:var(--ink-dim);padding:12px 8px 13px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.qt-voice-tab:hover{color:var(--ink);}
+.qt-voice-tab.active{color:var(--ink);border-bottom-color:var(--rust);}
+.qt-voice-panel{display:none;flex:1;min-height:0;}
+.qt-voice-panel.active{display:flex;}
+#qtVoiceSpeakPanel.active{position:relative;flex:1 1 auto;width:100%;min-width:0;min-height:0;height:auto;display:block;overflow:hidden;}
+#qtVoiceSpeakPanel:not(.active){display:none !important;}
+
+.qt-voice-messages{
+  position:absolute;inset:0 0 262px 0;width:100%;height:auto;min-height:0;max-height:none;
+  padding:32px 56px 28px;margin:0;overflow-y:auto;overflow-x:hidden;
+  display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:16px;
+  box-sizing:border-box;scrollbar-width:none;-ms-overflow-style:none;scroll-behavior:smooth;
+}
+.qt-voice-messages::-webkit-scrollbar{display:none;width:0;height:0;}
+.qt-voice-empty{display:none !important;}
+.qt-voice-hint{display:none !important;}
+
+.qt-voice-msg{
+  flex:0 0 auto;width:min(84%,760px);max-width:min(84%,760px);min-width:0;margin:0 0 16px auto;box-sizing:border-box;
+  align-self:flex-end;border:1px solid var(--line);background:#fff;color:var(--ink);
+  border-radius:18px;padding:16px 18px;box-shadow:0 8px 20px -18px rgba(21,24,27,.32);
+}
+.qt-voice-msg.user{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+.qt-voice-msg.failed{border-color:var(--rust);}
+.qt-voice-msg-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px;}
+.qt-voice-msg-label{font-family:'IBM Plex Mono',monospace;font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;opacity:.72;}
+.qt-voice-msg-time{font-family:'IBM Plex Mono',monospace;font-size:9.5px;opacity:.62;white-space:nowrap;}
+.qt-voice-audio-row{display:flex;align-items:center;gap:10px;width:100%;padding:4px 0;}
+.qt-voice-play{width:34px;height:34px;border:1px solid currentColor;background:none;color:inherit;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;border-radius:50%;}
+.qt-voice-play svg{width:15px;height:15px;}
+.qt-voice-audio{flex:1 1 auto;width:100%;min-width:0;max-width:none;height:38px;display:block;}
+.qt-voice-loader-wrap{margin-top:12px;width:100%;}
+.qt-voice-loader-track{height:3px;background:rgba(184,176,154,.45);overflow:hidden;}
+.qt-voice-loader-bar{height:100%;width:0;background:currentColor;transition:width .85s cubic-bezier(.16,1,.3,1);}
+.qt-voice-status-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:9px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;opacity:.72;}
+.qt-voice-status{letter-spacing:.05em;text-transform:uppercase;}
+.qt-voice-details{margin-top:10px;border-top:1px solid rgba(184,176,154,.32);padding-top:9px;}
+.qt-voice-msg.user .qt-voice-details{border-color:rgba(250,249,246,.15);}
+.qt-voice-details summary{cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.qt-voice-details summary::-webkit-details-marker{display:none;}
+.qt-voice-details summary::after{content:'⌄';font-size:13px;transition:transform .2s;}
+.qt-voice-details[open] summary::after{transform:rotate(180deg);}
+.qt-voice-detail-grid{display:grid;grid-template-columns:auto 1fr;gap:7px 12px;margin-top:10px;font-size:10.5px;line-height:1.5;}
+.qt-voice-detail-key{font-family:'IBM Plex Mono',monospace;opacity:.65;text-transform:uppercase;letter-spacing:.05em;}
+.qt-voice-detail-val{overflow-wrap:anywhere;word-break:break-word;}
+
+/* ---------- input area ---------- */
+.qt-voice-input-area{
+  position:absolute;left:0;right:0;bottom:0;width:100%;height:262px;min-height:262px;flex:none;margin:0;
+  padding:18px 30px 24px;box-sizing:border-box;background:var(--paper);border-top:1px solid var(--line);z-index:20;
+}
+.qt-voice-input-shell{
+  position:relative;width:min(760px,calc(100% - 80px));height:112px;min-height:112px;max-height:112px;margin:0 auto;box-sizing:border-box;
+  border:1px solid var(--line-strong);background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.qt-voice-input-shell.recording{border-color:var(--ink);}
+.qt-voice-wave{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;background:#fff;z-index:1;transition:opacity .2s;}
+.qt-voice-input-shell.recording .qt-voice-wave{opacity:1;}
+.qt-voice-mic{position:relative;z-index:3;width:68px;height:68px;border-radius:50%;border:1px solid var(--ink);background:var(--paper);color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .25s;box-shadow:0 12px 26px -18px rgba(21,24,27,.55);}
+.qt-voice-mic:hover{border-color:var(--rust);color:var(--rust);transform:translateY(-1px);}
+.qt-voice-mic.recording{background:var(--ink);color:var(--paper);border-color:var(--ink);animation:zvMicPulse 1.35s ease-in-out infinite;}
+@keyframes zvMicPulse{0%,100%{box-shadow:0 0 0 0 rgba(193,74,46,0)}50%{box-shadow:0 0 0 9px rgba(193,74,46,.10)}}
+.qt-voice-mic svg{width:28px;height:28px;}
+.zv-live{width:min(760px,100%);min-height:22px;margin:10px auto 0;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.qt-voice-controls{display:flex;align-items:center;justify-content:center;gap:14px;width:100%;min-height:44px;margin-top:12px;flex-wrap:wrap;}
+.qt-voice-toggle{order:1;display:flex;align-items:center;gap:9px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-dim);cursor:pointer;user-select:none;}
+.qt-voice-toggle input{position:absolute;opacity:0;pointer-events:none;}
+.qt-voice-switch{width:38px;height:21px;border:1px solid var(--line-strong);background:var(--panel);border-radius:20px;padding:2px;display:flex;align-items:center;transition:all .2s;}
+.qt-voice-switch::after{content:'';width:15px;height:15px;border-radius:50%;background:var(--ink-dim);transition:transform .2s,background .2s;}
+.qt-voice-toggle input:checked+.qt-voice-switch{background:var(--ink);border-color:var(--ink);}
+.qt-voice-toggle input:checked+.qt-voice-switch::after{transform:translateX(17px);background:var(--paper);}
+.qt-voice-send{order:2;display:none;border:1px solid var(--ink);background:var(--ink);color:var(--paper);padding:11px 18px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .2s;}
+.qt-voice-send:hover{background:var(--rust);border-color:var(--rust);}
+.qt-voice-send.show{display:inline-flex;align-items:center;justify-content:center;gap:8px;}
+.qt-voice-reset{order:3;border:1px solid var(--line-strong);background:none;color:var(--ink);padding:11px 18px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .2s;}
+.qt-voice-reset:hover{border-color:var(--ink);}
+.qt-voice-input-shell.voice-warning{border-color:var(--rust) !important;box-shadow:0 0 0 1px var(--rust) !important;}
+
+/* ---------- history ---------- */
+.qt-voice-history{overflow-y:auto;min-height:0;flex:1;padding:22px 24px 28px;display:block;scrollbar-width:none;-ms-overflow-style:none;}
+.qt-voice-history::-webkit-scrollbar{width:0;height:0;display:none;}
+.qt-voice-history:not(.active){display:none !important;}
+.qt-voice-history.active{display:block !important;position:static;width:100%;height:auto;min-height:0;overflow-y:auto;}
+.qt-voice-history-list{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:10px;padding-bottom:20px;}
+.qt-voice-history-item{border:1px solid var(--line);background:#fff;padding:13px 14px;display:flex;align-items:center;gap:12px;}
+.qt-voice-history-main{flex:1;min-width:0;}
+.qt-voice-history-title{font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:14px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.qt-voice-history-meta{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--ink-dim);margin-top:5px;display:flex;gap:8px;flex-wrap:wrap;text-transform:uppercase;letter-spacing:.04em;}
+.qt-voice-history-audio{width:min(330px,42vw);height:32px;}
+
+/* ---------- warning toast ---------- */
+#qtVoiceWarningToast{position:fixed;top:78px;right:22px;z-index:5000;max-width:min(420px,calc(100vw - 44px));padding:13px 18px;background:var(--ink);color:var(--paper);border-left:3px solid var(--rust);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;line-height:1.5;box-shadow:0 16px 35px -18px rgba(21,24,27,.55);transform:translateX(calc(100% + 40px));opacity:0;pointer-events:none;transition:transform .45s cubic-bezier(.16,1,.3,1),opacity .3s ease;}
+#qtVoiceWarningToast.show{transform:translateX(0);opacity:1;}
+
+/* ---------- commands / my gestures / creator overlay ---------- */
+.qt-voice-shell .zv-panel{display:none;flex-direction:column;overflow-y:auto;min-height:0;flex:1;padding:20px 24px 28px;scrollbar-width:thin;}
+.qt-voice-shell .zv-panel.active{display:flex;}
+.zv-wrap{max-width:760px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:8px;}
+.zv-intro{font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.7;color:var(--ink-dim);border-left:3px solid var(--rust);padding:4px 0 4px 12px;margin-bottom:6px;}
+.zv-intro b,.zv-intro i{color:var(--ink);font-style:normal;}
+.zv-search{width:100%;border:1px solid var(--line);background:#fff;padding:11px 13px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink);outline:none;}
+.zv-search:focus{border-color:var(--ink);}
+.zv-cat{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--rust);margin-top:12px;}
+.zv-cat span{color:var(--ink-dim);}
+.zv-row{display:flex;align-items:center;gap:12px;border:1px solid var(--line);background:#fff;padding:10px 12px;}
+.zv-name{flex:1;min-width:0;}
+.zv-name b{display:block;font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:14px;color:var(--ink);text-transform:capitalize;}
+.zv-name small{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-dim);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.zv-btns{display:flex;gap:6px;flex-shrink:0;}
+.zv-run{border:1px solid var(--ink);background:var(--ink);color:var(--paper);padding:7px 14px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;flex-shrink:0;}
+.zv-run:hover{background:var(--rust);border-color:var(--rust);}
+.zv-run.alt{background:#fff;color:var(--ink);}
+.zv-run.alt:hover{background:var(--panel);color:var(--ink);border-color:var(--ink);}
+.zv-create{align-self:flex-start;border:1px solid var(--rust);background:var(--rust);color:#fff;padding:11px 20px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;}
+.zv-create:hover{background:var(--rust-dim);}
+.zv-empty{padding:40px 10px;text-align:center;color:var(--ink-dim);font-family:'IBM Plex Mono',monospace;font-size:12px;}
+.zv-thumb{width:46px;height:46px;object-fit:contain;background:var(--panel);border:1px solid var(--line);flex-shrink:0;}
+.zv-hello{text-align:center;color:var(--ink-dim);font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.9;padding:26px 14px;}
+.zv-hello b{color:var(--ink);font-family:'Space Grotesk',sans-serif;font-size:17px;}
+#zvToast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,30px);opacity:0;pointer-events:none;z-index:100001;background:var(--ink);color:var(--paper);border-left:3px solid var(--rust);padding:11px 18px;font-family:'IBM Plex Mono',monospace;font-size:12px;max-width:min(520px,92vw);transition:all .25s;}
+#zvToast.show{opacity:1;transform:translate(-50%,0);}
+#zvCreatorOverlay{position:fixed;inset:0;z-index:100000;background:var(--paper);display:none;flex-direction:column;}
+#zvCreatorOverlay.open{display:flex;}
+.zv-cbar{display:flex;align-items:center;gap:14px;padding:10px 18px;background:var(--ink);color:var(--paper);flex-shrink:0;}
+.zv-cbar b{font-family:'Space Grotesk',sans-serif;font-size:15px;}
+.zv-cbar span{flex:1;font-family:'IBM Plex Mono',monospace;font-size:10.5px;opacity:.7;min-width:0;}
+.zv-cbar button{border:0;background:none;color:var(--paper);font-size:20px;cursor:pointer;padding:2px 8px;}
+#zvCreatorFrame{flex:1;width:100%;border:0;background:var(--paper);}
+
+@media (max-width:760px){
+  .qt-voice-head{padding:15px 16px 0;}
+  .qt-voice-head-row{margin-bottom:10px;}
+  .zv-connection-status{padding:6px 8px;font-size:8.5px;}
+  .zv-user-txt small{display:none;}
+  .zv-user-txt b{max-width:90px;}
+  .qt-voice-messages{inset:0 0 250px 0;padding:20px 16px 22px;}
+  .qt-voice-msg{width:94%;max-width:94%;}
+  .qt-voice-input-area{height:250px;min-height:250px;padding:12px 16px 18px;}
+  .qt-voice-input-shell{width:100%;height:100px;min-height:100px;max-height:100px;}
+  .qt-voice-history{padding:16px 14px 20px;}
+  .qt-voice-history-item{align-items:flex-start;flex-direction:column;}
+  .qt-voice-history-audio{width:100%;}
+  .qt-voice-shell .zv-panel{padding:14px 14px 22px;}
+  .zv-cbar span{display:none;}
+  .zv-row{flex-wrap:wrap;}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important;}}
+</style>
+<style>
+.zv-back{position:relative;z-index:100;cursor:pointer;pointer-events:auto;border:1px solid var(--line-strong);background:none;color:var(--ink);text-decoration:none;padding:10px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;transition:.2s;flex-shrink:0;white-space:nowrap}
+.zv-back:hover{border-color:var(--ink)}
+@media(max-width:680px){.zv-back{padding:8px 10px;font-size:9.5px}}
+</style>
+</head>
+<body>
+<div id="qtVoiceWarningToast" aria-live="assertive" role="alert">No speech detected. Please try again.</div>
+<div class="qt-modal-overlay show" id="qtVoiceOverlay">
+  <div class="qt-modal qt-voice-modal">
+    <div class="qt-voice-shell">
+      <div class="qt-voice-head">
+        <div class="qt-voice-head-row">
+          <div class="qt-voice-head-title">
+            <div class="qt-z-badge">Z</div>
+            <div>
+              <h4>Voice Control &middot; Gestures</h4>
+              <span id="qtVoiceState">● Ready</span>
+            </div>
+          </div>
+          <div class="zv-user" id="zvUser"><div class="zv-user-av" id="zvUserAv">?</div><div class="zv-user-txt"><b id="zvUserName">Not signed in</b><small id="zvUserEmail">Sign in on the main page</small></div></div>
+          <div class="zv-connection-status" id="zvConnectionStatus" aria-live="polite"><span class="zv-connection-dot" id="zvConnectionDot"></span><span id="zvConnectionText">Checking connection</span></div>
+          <button class="zv-back" id="qtVoiceCloseBtn" type="button" aria-label="Back to Dashboard" data-href="https://arulv123.github.io/ZIPPY-MAIN-PAGE-1/">Back to Dashboard</button>
+        </div>
+        <div class="qt-voice-tabs" role="tablist">
+          <button class="qt-voice-tab active" id="qtVoiceSpeakTab" type="button" role="tab" aria-selected="true">Speak</button>
+          <button class="qt-voice-tab" id="qtVoiceHistoryTab" type="button" role="tab" aria-selected="false">History</button>
+        </div>
+      </div>
+      <section class="qt-voice-panel qt-voice-speak active" id="qtVoiceSpeakPanel" role="tabpanel">
+        <div class="qt-voice-messages" id="qtVoiceMessages">
+          <div class="qt-voice-empty" id="qtVoiceEmptyState"></div>
+        </div>
+        <div class="qt-voice-input-area">
+          <div class="qt-voice-input-shell" id="qtVoiceInputShell">
+            <canvas class="qt-voice-wave" id="qtVoiceWave" aria-hidden="true"></canvas>
+            <button class="qt-voice-mic" id="qtVoiceMicBtn" type="button" aria-label="Start recording">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="12" rx="4"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><line x1="12" y1="18" x2="12" y2="21"></line><line x1="9" y1="21" x2="15" y2="21"></line></svg>
+            </button>
+          </div>
+          <div class="zv-live" id="zvLive" aria-live="polite"></div>
+          <div class="qt-voice-hint" id="qtVoiceHint">Tap the mic to start</div>
+          <div class="qt-voice-controls">
+            <label class="qt-voice-toggle" for="qtVoiceAutoSend"><input id="qtVoiceAutoSend" type="checkbox" checked><span class="qt-voice-switch" aria-hidden="true"></span><span>Auto send</span></label>
+            <button class="qt-voice-send" id="qtVoiceSendBtn" type="button">Send command</button>
+            <button class="qt-voice-reset" id="qtVoiceResetBtn" type="button">Clear recording</button>
+          </div>
+        </div>
+      </section>
+      <section class="qt-voice-panel qt-voice-history" id="qtVoiceHistoryPanel" role="tabpanel">
+        <div class="qt-voice-history-list" id="qtVoiceHistoryList"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script>
+/* ===== Standalone Voice Page bridge ===== */
+const MAIN_PAGE_URL = 'actualworkingpage(3)_separated_gesture(1).html';
+const MAIN_PAGE_WINDOW = 'ZippyMainPage';
+const CODE_VERIFIED_KEY = 'zippyVerifiedEmail';
+
+/* Microphone needs localhost or HTTPS (not file://). */
+const VOICE_MIC_ALLOWED_CONTEXT = window.isSecureContext || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBTCit215onnSyWXjDXRXU1tVsVmKW4MHU",
+  authDomain: "zippythebionicarm.firebaseapp.com",
+  databaseURL: "https://zippythebionicarm-default-rtdb.firebaseio.com",
+  projectId: "zippythebionicarm",
+  storageBucket: "zippythebionicarm.firebasestorage.app",
+  messagingSenderId: "1000242987274",
+  appId: "1:1000242987274:web:6ab9da304f2dfd6b9d3af3"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
+async function sendDeviceCommand(code,name,value){
+  if(!code){return false;}
+  try{
+    await db.ref('users/' + code + '/command').set({name:name,value:value,ts:firebase.database.ServerValue.TIMESTAMP});
+    return true;
+  }catch(err){
+    console.error('sendDeviceCommand failed:',err);
+    return false;
+  }
+}
+
+let currentUserCode=null;
+let deviceStatusRef=null;
+let deviceStatusTimer=null;
+
+const zvConnectionStatus=document.getElementById('zvConnectionStatus');
+const zvConnectionText=document.getElementById('zvConnectionText');
+
+function setConnectionIndicator(state){
+  if(!zvConnectionStatus||!zvConnectionText)return;
+  zvConnectionStatus.classList.remove('online','offline');
+  if(state==='online'){zvConnectionStatus.classList.add('online');zvConnectionText.textContent='ESP32 Online';}
+  else if(state==='offline'){zvConnectionStatus.classList.add('offline');zvConnectionText.textContent='ESP32 Offline';}
+  else if(state==='error'){zvConnectionStatus.classList.add('offline');zvConnectionText.textContent='Connection Error';}
+  else{zvConnectionText.textContent='Checking connection';}
+}
+
+function goToMainPage(){
+  try{if(window.opener && !window.opener.closed){window.opener.focus();return;}}catch(e){}
+  try{const w=window.open(MAIN_PAGE_URL,MAIN_PAGE_WINDOW);if(w){w.focus();return;}}catch(e){}
+  window.location.href=MAIN_PAGE_URL;
+}
+
+async function findUserRecordByEmail(email){
+  const snap=await db.ref('users').orderByChild('email').equalTo(String(email||'').toLowerCase()).once('value');
+  if(!snap.exists())return null;
+  let match=null;
+  snap.forEach(child=>{match={code:child.key,...child.val()};});
+  return match;
+}
+
+function setVoiceConnectionState(online){if(window.zippyPortSupported)online=window.zippyPortIsOpen();setConnectionIndicator(online?'online':'offline');}
+
+function setSessionMessage(message){
+  if(!zvConnectionText)return;
+  zvConnectionStatus.classList.remove('online','offline');
+  if(message==='● Connect on Main Page'){zvConnectionStatus.classList.add('offline');zvConnectionText.textContent='Not Connected';}
+  else if(message==='● Verify on Main Page'){zvConnectionStatus.classList.add('offline');zvConnectionText.textContent='Verify Connection';}
+  else if(message==='● Account not found'){zvConnectionStatus.classList.add('offline');zvConnectionText.textContent='Account Not Found';}
+  else{zvConnectionStatus.classList.add('offline');zvConnectionText.textContent='Connection Error';}
+}
+
+function startDeviceStatus(code){
+  if(deviceStatusRef)deviceStatusRef.off('value');
+  if(deviceStatusTimer)clearInterval(deviceStatusTimer);
+  deviceStatusRef=db.ref('users/'+code);
+  const render=snap=>{
+    const data=snap.val()||{};
+    setVoiceConnectionState(data.status==='online');
+  };
+  deviceStatusRef.on('value',render);
+  deviceStatusTimer=setInterval(async()=>{
+    try{render(await deviceStatusRef.once('value'));}
+    catch(e){setConnectionIndicator('error');}
+  },1000);
+}
+
+function stopDeviceStatus(){
+  if(deviceStatusRef){deviceStatusRef.off('value');deviceStatusRef=null;}
+  if(deviceStatusTimer){clearInterval(deviceStatusTimer);deviceStatusTimer=null;}
+}
+
+function readMainPageState(){
+  try{return JSON.parse(localStorage.getItem('zippyCrossPageState_v1')||'null');}catch(e){return null;}
+}
+
+/* Sign-in details shown at the top (from Firebase user, or the main page's saved state) */
+function setUserChip(user){
+  const st=readMainPageState()||{},g=st.googleUser||{};
+  const email=(user&&user.email)||g.email||st.verifiedEmail||'';
+  const name=(user&&user.displayName)||g.name||g.displayName||(email?email.split('@')[0]:'');
+  const photo=(user&&user.photoURL)||g.picture||g.photoURL||'';
+  const av=document.getElementById('zvUserAv');
+  document.getElementById('zvUserName').textContent=name||'Not signed in';
+  document.getElementById('zvUserEmail').textContent=email||'Sign in on the main page';
+  av.textContent='';
+  if(photo){
+    const im=new Image();im.referrerPolicy='no-referrer';im.alt='';im.src=photo;
+    im.onerror=()=>{av.textContent=(name||'?').charAt(0).toUpperCase();};
+    av.appendChild(im);
+  }else av.textContent=(name||'?').charAt(0).toUpperCase();
+}
+
+async function restoreSession(user){
+  setUserChip(user);
+  if(!user){
+    setSessionMessage('● Connect on Main Page');
+    currentUserCode=null;
+    return;
+  }
+  const email=(user.email||'').toLowerCase();
+  const st=readMainPageState();
+  const stEmail=String((st&&st.googleUser&&st.googleUser.email)||(st&&st.verifiedEmail)||'').toLowerCase();
+  const stateOk=!!(st&&st.currentUserCode&&stEmail===email);
+  const verified=(localStorage.getItem(CODE_VERIFIED_KEY)||'').toLowerCase()===email;
+  if(!verified&&!stateOk){
+    setSessionMessage('● Verify on Main Page');
+    currentUserCode=null;
+    return;
+  }
+  if(stateOk){
+    currentUserCode=String(st.currentUserCode);
+    try{localStorage.setItem('zippyCurrentUserCode',currentUserCode);}catch(e){}
+    startDeviceStatus(currentUserCode);
+  }
+  try{
+    const record=await findUserRecordByEmail(email);
+    if(record){
+      currentUserCode=String(record.code);
+      try{localStorage.setItem('zippyCurrentUserCode',currentUserCode);}catch(e){}
+      startDeviceStatus(currentUserCode);
+    }else if(!stateOk){
+      currentUserCode=null;
+      setSessionMessage('● Account not found');
+    }
+  }catch(err){
+    if(!stateOk){currentUserCode=null;setSessionMessage('● Connection error');}
+  }
+}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  setUserChip(null);
+  document.body.classList.add('qt-no-scroll');
+  const overlay=document.getElementById('qtVoiceOverlay');
+  if(overlay){overlay.classList.add('show');overlay.style.removeProperty('display');}
+  const closeBtn=document.getElementById('qtVoiceCloseBtn');
+  if(closeBtn){closeBtn.title='Back to Dashboard';}
+  auth.onAuthStateChanged(restoreSession);
+});
+
+window.addEventListener('beforeunload',()=>stopDeviceStatus());
+</script>
+
+<script>
+(function(){
+  const overlay=document.getElementById('qtVoiceOverlay');
+  const closeBtn=document.getElementById('qtVoiceCloseBtn');
+  const speakTab=document.getElementById('qtVoiceSpeakTab');
+  const historyTab=document.getElementById('qtVoiceHistoryTab');
+  const speakPanel=document.getElementById('qtVoiceSpeakPanel');
+  const historyPanel=document.getElementById('qtVoiceHistoryPanel');
+  const messages=document.getElementById('qtVoiceMessages');
+  const emptyState=document.getElementById('qtVoiceEmptyState');
+  const inputShell=document.getElementById('qtVoiceInputShell');
+  const micBtn=document.getElementById('qtVoiceMicBtn');
+  const hint=document.getElementById('qtVoiceHint');
+  const autoSend=document.getElementById('qtVoiceAutoSend');
+  const sendBtn=document.getElementById('qtVoiceSendBtn');
+  const resetBtn=document.getElementById('qtVoiceResetBtn');
+  const historyList=document.getElementById('qtVoiceHistoryList');
+  const waveCanvas=document.getElementById('qtVoiceWave');
+  const warningToast=document.getElementById('qtVoiceWarningToast');
+  let warningToastTimer=null;
+  function showVoiceWarning(){
+    if(!warningToast)return;
+    warningToast.classList.add('show');
+    clearTimeout(warningToastTimer);
+    warningToastTimer=setTimeout(()=>warningToast.classList.remove('show'),2600);
+  }
+  const stateEl=document.getElementById('qtVoiceState');
+  if(!overlay||!micBtn||!waveCanvas) return;
+
+  if(!VOICE_MIC_ALLOWED_CONTEXT){
+    stateEl.textContent='● Local file mode';
+    hint.textContent='Use http://localhost or HTTPS for microphone access';
+  }
+
+  const STORAGE_KEY='zippyVoiceHistory_v1';
+  let recorder=null,stream=null,chunks=[],blob=null,startedAt=0,audioContext=null,analyser=null,frame=0,
+  recognition=null,finalText='',interimText='',pendingSend=false,isSending=false,waveHistory=[],waveWidth=0,
+  voiceDetected=false,recognitionSettled=false,finishTimer=null,
+  recognitionReady=false,recognitionWanted=false,micStreamPromise=null,pageClosing=false;
+  /* speech-capture state */
+  let capturing=false,lastResultTs=0,recognitionLive=false,segAlts=[];
+
+  /* Build several whole-sentence candidates from the recognition engine's n-best results.
+     This lets command matching recover when Chrome's first transcript is wrong but one of
+     its alternatives contains the actual command. */
+  function getAlts(){
+    const out=[],seen=new Set();
+    const add=v=>{v=cleanTranscript(v);if(!v||seen.has(v))return;seen.add(v);out.push(v)};
+    if(segAlts.length){
+      const base=segAlts.map(x=>x[0]||'').join(' ');
+      add(base);
+      let beams=[{parts:[],score:0}];
+      for(const seg of segAlts){
+        const next=[];
+        const alts=seg.slice(0,Math.min(6,seg.length));
+        for(const b of beams){
+          for(let i=0;i<alts.length;i++){
+            const a=alts[i]||'';
+            const conf=(seg[i+'_confidence']!=null?seg[i+'_confidence']:0);
+            next.push({parts:b.parts.concat(a),score:b.score+(conf||0)+(i===0?.04:0)-i*.006});
+          }
+        }
+        next.sort((a,b)=>b.score-a.score);
+        beams=next.slice(0,14);
+      }
+      beams.forEach(b=>add(b.parts.join(' ')));
+      for(let si=0;si<segAlts.length;si++){
+        const seg=segAlts[si];
+        for(let ai=1;ai<Math.min(6,seg.length);ai++){
+          const parts=segAlts.map((x,j)=>j===si?(x[ai]||x[0]||''):(x[0]||''));
+          add(parts.join(' '));
+        }
+      }
+    }
+    return out.slice(0,20);
+  }
+
+  const escapeHtml=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const timeNow=()=>new Intl.DateTimeFormat([], {hour:'numeric',minute:'2-digit'}).format(new Date());
+  const dateNow=()=>new Date().toISOString();
+  const duration=ms=>{const s=Math.max(1,Math.round((ms||0)/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+  const readHistory=()=>{try{const x=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');return Array.isArray(x)?x:[]}catch(e){return[]}};
+  const writeHistory=x=>{try{localStorage.setItem(STORAGE_KEY,JSON.stringify(x.slice(0,20)))}catch(e){}};
+  const fmtDate=x=>{try{return new Intl.DateTimeFormat([], {dateStyle:'medium',timeStyle:'short'}).format(new Date(x))}catch(e){return '—'}};
+  const dataUrlFromBlob=b=>new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(b)});
+
+  function setTab(tab){
+    const h=tab==='history';
+    speakTab.classList.toggle('active',!h);historyTab.classList.toggle('active',h);
+    speakTab.setAttribute('aria-selected',String(!h));historyTab.setAttribute('aria-selected',String(h));
+    speakPanel.classList.toggle('active',!h);historyPanel.classList.toggle('active',h);
+    if(h)renderHistory();
+  }
+
+  function releaseMicrophone(){
+    pageClosing=true;
+    recognitionWanted=false;
+    if(recognition){try{recognition.stop();}catch(e){}}
+    if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+    micStreamPromise=null;
+    if(audioContext){audioContext.close().catch(()=>{});audioContext=null;}
+    analyser=null;
+  }
+
+  function closeVoice(){
+    capturing=false;
+    try{window.ZV&&window.ZV.toast('Staying on this page - just tap the mic to talk')}catch(e){}
+    try{if(active){cancelled=true;stopRecording(false)}}catch(e){}
+    try{resetLocal(false)}catch(e){}
+    try{resetWave()}catch(e){}
+  }
+
+  function resizeCanvas(){
+    const r=waveCanvas.getBoundingClientRect(),d=window.devicePixelRatio||1;
+    const w=Math.max(1,Math.floor(r.width)),h=Math.max(1,Math.floor(r.height));
+    waveCanvas.width=Math.floor(w*d);waveCanvas.height=Math.floor(h*d);waveWidth=w;
+    const points=Math.max(28,Math.floor(w/6));
+    if(waveHistory.length>points)waveHistory=waveHistory.slice(waveHistory.length-points);
+  }
+
+  function drawWave(){
+    if(!analyser)return;
+    const rect=inputShell.getBoundingClientRect(),w=Math.max(1,Math.floor(rect.width)),h=Math.max(1,Math.floor(rect.height)),d=window.devicePixelRatio||1;
+    if(waveWidth!==w){waveWidth=w;waveCanvas.width=Math.floor(w*d);waveCanvas.height=Math.floor(h*d);waveHistory=[];}
+    const c=waveCanvas.getContext('2d');
+    c.setTransform(d,0,0,d,0,0);
+    c.clearRect(0,0,w,h);
+    const data=new Uint8Array(analyser.fftSize);
+    analyser.getByteTimeDomainData(data);
+    let sum=0;
+    for(let i=0;i<data.length;i++){const v=(data[i]-128)/128;sum+=v*v;}
+    const rms=Math.sqrt(sum/data.length);
+    const normalized=Math.min(1,Math.max(0,(rms-0.008)/0.12));
+    if(normalized>0.08)voiceDetected=true;
+    const smoothed=(waveHistory.length?waveHistory[waveHistory.length-1]:0)*0.68+normalized*0.32;
+    waveHistory.push(Math.min(1,smoothed));
+    const points=Math.max(28,Math.floor(w/6));
+    while(waveHistory.length>points)waveHistory.shift();
+    c.fillStyle='rgba(21,24,27,.96)';
+    const gap=Math.max(2,w/points*.34);
+    const barW=Math.max(3,Math.min(9,w/points-gap));
+    const maxH=h*.92;
+    const baseX=w-waveHistory.length*(barW+gap);
+    for(let i=0;i<waveHistory.length;i++){
+      const a=waveHistory[i];
+      const height=Math.max(1,maxH*Math.pow(a,0.72));
+      const x=baseX+i*(barW+gap);
+      const y=(h-height)/2;
+      c.beginPath();
+      c.roundRect(x,y,barW,height,Math.min(barW/2,5));
+      c.fill();
+    }
+    frame=requestAnimationFrame(drawWave);
+  }
+
+  function resetWave(){waveHistory=[];cancelAnimationFrame(frame);const c=waveCanvas.getContext('2d');const d=window.devicePixelRatio||1;const r=waveCanvas.getBoundingClientRect();const w=Math.max(1,r.width),h=Math.max(1,r.height);waveCanvas.width=Math.floor(w*d);waveCanvas.height=Math.floor(h*d);c.setTransform(d,0,0,d,0,0);c.clearRect(0,0,w,h)}
+
+  /* ================= SPEECH CAPTURE (rewritten) =================
+     Fixes: (1) mobile mic conflict - on phones the mic is given ONLY to SpeechRecognition,
+     (2) transcript is rebuilt from the full results list every event (no lost / doubled words),
+     (3) recognition starts synchronously inside the tap, (4) auto-stops ~1.3s after you finish,
+     (5) instant restart between engine sessions, (6) live transcript so you can see what it hears. */
+  const SRClass=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const isMobile=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/i.test(navigator.platform));
+  const useMic=!isMobile;
+  const ENDPOINT_MS=1300,IDLE_MS=9000,MAX_MS=20000;
+  let active=false,cancelled=false,heard=false,endTimer=null,idleTimer=null,maxTimer=null,restartFails=0,lastStartTs=0,committedSegs=[],fatalMsg='';
+  const liveEl=document.getElementById('zvLive');
+  const showLive=t=>{if(liveEl)liveEl.textContent=t||''};
+  function clearTimers(){clearTimeout(endTimer);clearTimeout(idleTimer);clearTimeout(maxTimer)}
+  function armEndpoint(){clearTimeout(endTimer);endTimer=setTimeout(()=>{if(active)stopRecording(!autoSend.checked)},ENDPOINT_MS)}
+  const joinSegs=()=>segAlts.map(x=>x[0]||'').join(' ').replace(/\s+/g,' ').trim();
+
+  function ensureRecognition(){
+    if(recognition)return true;
+    if(!SRClass)return false;
+    recognition=new SRClass();
+    recognition.continuous=!isMobile;   /* continuous mode is unreliable on phones */
+    recognition.interimResults=true;
+    recognition.lang='en-IN';
+    recognition.maxAlternatives=8;
+    recognition.onstart=()=>{recognitionLive=true;lastStartTs=Date.now();};
+    recognition.onresult=e=>{
+      if(!capturing)return;
+      lastResultTs=Date.now();
+      const fin=[];let interim='';
+      for(let n=0;n<e.results.length;n++){
+        const r=e.results[n],alts=[];
+        for(let a=0;a<r.length;a++){
+          const tr=String(r[a].transcript||'').trim();
+          if(tr){alts.push(tr);alts[(alts.length-1)+'_confidence']=Number(r[a].confidence)||0;}
+        }
+        if(!alts.length)continue;
+        if(r.isFinal)fin.push(alts);else interim+=(interim?' ':'')+alts[0];
+      }
+      segAlts=committedSegs.concat(fin);
+      finalText=joinSegs();interimText=interim;
+      const live=(finalText+' '+interimText).trim();
+      if(live){heard=true;showLive(live);armEndpoint();}
+    };
+    recognition.onerror=err=>{
+      const code=err&&err.error;
+      console.warn('SpeechRecognition error:',code);
+      if(code==='not-allowed'||code==='service-not-allowed'){
+        recognitionWanted=false;fatalMsg='Allow microphone access, then tap the mic again';
+        stateEl.textContent='● Mic permission required';showLive(fatalMsg);
+      }else if(code==='network'){
+        recognitionWanted=false;fatalMsg='Speech service needs internet - check your connection';
+        stateEl.textContent='● Speech service offline';showLive(fatalMsg);
+      }else if(code==='audio-capture'){
+        recognitionWanted=false;fatalMsg='No microphone found or it is used by another app';
+        stateEl.textContent='● Microphone busy';showLive(fatalMsg);
+      }
+    };
+    recognition.onend=()=>{
+      recognitionLive=false;
+      if(interimText){segAlts.push([interimText]);interimText='';finalText=joinSegs();}
+      committedSegs=segAlts.slice();
+      if(recognitionWanted&&capturing&&!pageClosing){
+        restartFails=(Date.now()-lastStartTs<400)?restartFails+1:0;
+        if(restartFails>5){recognitionWanted=false;fatalMsg='Speech engine keeps stopping - tap the mic again';showLive(fatalMsg);return;}
+        setTimeout(()=>{
+          if(recognitionWanted&&capturing&&!recognitionLive&&!pageClosing){try{recognition.start();}catch(e){}}
+        },40);
+      }
+    };
+    recognitionReady=true;
+    return true;
+  }
+
+  function startRecognition(){
+    if(!ensureRecognition())return Promise.resolve(false);
+    recognitionWanted=true;
+    if(!recognitionLive){try{recognition.start();}catch(e){}}   /* synchronous: stays inside the tap gesture */
+    return new Promise(res=>{const t0=Date.now();(function w(){if(recognitionLive||Date.now()-t0>3000)res(recognitionLive);else setTimeout(w,50)})()});
+  }
+
+  function stopRecognition(){
+    recognitionWanted=false;
+    if(recognition){try{recognition.stop();}catch(e){}}
+    return Promise.resolve();
+  }
+
+  const cleanTranscript=v=>String(v||'').replace(/[^\p{L}\p{N}\s']/gu,' ').replace(/\s+/g,' ').trim();
+  const hasMeaningfulTranscript=v=>{
+    const t=cleanTranscript(v);
+    if(!t)return false;
+    const words=t.split(' ').filter(Boolean);
+    return words.some(w=>w.replace(/['\d]/g,'').length>=2) || t.replace(/[^\p{L}\p{N}]/gu,'').length>=3 || /\d/.test(t);
+  };
+  function chooseMime(){const types=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4'];return types.find(t=>window.MediaRecorder&&MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t))||''}
+
+  async function startRecording(){
+    if(active)return;
+    if(!VOICE_MIC_ALLOWED_CONTEXT){
+      stateEl.textContent='● Open through localhost';
+      hint.textContent='Run this page with VS Code Live Server, not by opening the HTML file directly';
+      inputShell.classList.add('voice-warning');showVoiceWarning();
+      setTimeout(()=>inputShell.classList.remove('voice-warning'),2200);
+      return;
+    }
+    if(!SRClass){
+      stateEl.textContent='● Not supported';
+      showLive('Voice recognition needs Chrome, Edge or Safari');
+      showVoiceWarning();return;
+    }
+    finalText='';interimText='';segAlts=[];committedSegs=[];heard=false;fatalMsg='';cancelled=false;
+    capturing=true;active=true;restartFails=0;chunks=[];blob=null;startedAt=Date.now();pendingSend=false;voiceDetected=false;
+    showLive('');resetWave();
+    inputShell.classList.add('recording');micBtn.classList.add('recording');
+    stateEl.textContent='● Listening';hint.textContent='Listening…';
+    sendBtn.classList.toggle('show',!autoSend.checked);
+    clearTimers();
+    idleTimer=setTimeout(()=>{if(active&&!heard)stopRecording(false)},IDLE_MS);
+    maxTimer=setTimeout(()=>{if(active)stopRecording(!autoSend.checked)},MAX_MS);
+
+    const recP=startRecognition();   /* recognition FIRST, before anything async */
+
+    /* Waveform + audio clip only on desktop. On phones the mic is left to the speech engine. */
+    if(useMic&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&window.MediaRecorder){
+      try{
+        if(!stream||!stream.getTracks().some(t=>t.readyState==='live')){
+          stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1}})
+            .catch(()=>navigator.mediaDevices.getUserMedia({audio:true}));
+        }
+        if(!active)return;
+        resizeCanvas();
+        const mime=chooseMime();
+        recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);
+        recorder.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+        recorder.onstop=finishRecording;
+        const AC=window.AudioContext||window.webkitAudioContext;
+        if(AC){
+          if(!audioContext||audioContext.state==='closed')audioContext=new AC();
+          if(audioContext.state==='suspended')await audioContext.resume().catch(()=>{});
+          analyser=audioContext.createAnalyser();analyser.fftSize=512;analyser.smoothingTimeConstant=.58;
+          audioContext.createMediaStreamSource(stream).connect(analyser);
+        }
+        recorder.start(250);
+        frame=requestAnimationFrame(drawWave);
+      }catch(e){console.warn('Waveform/recording unavailable (speech still works):',e);analyser=null;recorder=null;}
+    }
+    await recP;
+  }
+
+  function stopRecording(keepSendButton){
+    if(!active)return;
+    active=false;clearTimers();recognitionWanted=false;
+    try{if(recognition&&recognitionLive)recognition.stop();}catch(e){}   /* stop() (not abort) so the final result is delivered */
+    analyser=null;cancelAnimationFrame(frame);
+    inputShell.classList.remove('recording');micBtn.classList.remove('recording');
+    stateEl.textContent='● Processing';
+    if(!keepSendButton)sendBtn.classList.remove('show');
+    const r=recorder;recorder=null;
+    if(r&&r.state==='recording'){try{r.stop();return;}catch(e){}}   /* onstop -> finishRecording */
+    finishRecording();
+  }
+
+  async function finishRecording(){
+    blob=chunks.length?new Blob(chunks,{type:(chunks[0]&&chunks[0].type)||'audio/webm'}):null;
+    const t0=Date.now();lastResultTs=t0;
+    /* wait for the engine to flush its last words and fire onend */
+    while(Date.now()-t0<2000&&(recognitionLive||Date.now()-lastResultTs<400))await new Promise(r=>setTimeout(r,80));
+    if(active)return;   /* user already started a new recording */
+    capturing=false;
+    if(cancelled){cancelled=false;resetLocal(false);resetWave();showLive('');return;}
+    const text=cleanTranscript(finalText+' '+interimText);
+    showLive(text);
+    if(!hasMeaningfulTranscript(text)){
+      pendingSend=false;sendBtn.classList.remove('show');
+      stateEl.textContent='● No voice detected';
+      hint.textContent='No speech detected. Please try again.';
+      inputShell.classList.add('voice-warning');showVoiceWarning();
+      setTimeout(()=>inputShell.classList.remove('voice-warning'),1800);
+      const msg=fatalMsg;fatalMsg='';
+      resetLocal(false);resetWave();showLive(msg);
+      return;
+    }
+    if(autoSend.checked||pendingSend){pendingSend=false;setTimeout(()=>sendRecording(),60);}
+    else{sendBtn.classList.add('show');stateEl.textContent='● Ready';}
+  }
+
+  function addMessage(item,animate){
+    if(emptyState)emptyState.style.display='none';
+    const box=document.createElement('div');box.className='qt-voice-msg user'+(item.failed?' failed':'');
+    box.innerHTML='<div class="qt-voice-msg-head"><span class="qt-voice-msg-label">Audio command</span><span class="qt-voice-msg-time">'+escapeHtml(item.timeLabel||timeNow())+'</span></div><div class="qt-voice-audio-row"><button class="qt-voice-play" type="button" aria-label="Play recording"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg></button><audio class="qt-voice-audio" controls preload="metadata"></audio></div><div class="qt-voice-loader-wrap"><div class="qt-voice-loader-track"><div class="qt-voice-loader-bar"></div></div></div><div class="qt-voice-status-row"><span class="qt-voice-status">'+escapeHtml(item.status||'Sending command')+'</span><span>'+escapeHtml(item.duration||'0:01')+'</span></div><details class="qt-voice-details"><summary>Command details</summary><div class="qt-voice-detail-grid"><span class="qt-voice-detail-key">Text</span><span class="qt-voice-detail-val">'+escapeHtml(item.text||'No transcript available')+'</span><span class="qt-voice-detail-key">Sent</span><span class="qt-voice-detail-val">'+escapeHtml(fmtDate(item.iso||dateNow()))+'</span><span class="qt-voice-detail-key">Status</span><span class="qt-voice-detail-val">'+escapeHtml(item.status||'Pending')+'</span></div></details>';
+    messages.appendChild(box);requestAnimationFrame(()=>{messages.scrollTop=Math.max(0,box.offsetTop-messages.clientHeight+box.offsetHeight+12)});
+    const audio=box.querySelector('audio'),play=box.querySelector('.qt-voice-play'),bar=box.querySelector('.qt-voice-loader-bar');
+    if(!item.audio){const r=box.querySelector('.qt-voice-audio-row');if(r)r.style.display='none';}
+    if(item.audio){audio.src=item.audio;play.addEventListener('click',()=>audio.paused?audio.play():audio.pause());audio.addEventListener('play',()=>play.innerHTML='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3v14H7zm7 0h3v14h-3z"></path></svg>');audio.addEventListener('pause',()=>play.innerHTML='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>')}
+    if(animate){bar.style.width='18%';requestAnimationFrame(()=>{bar.style.width='100%'})}
+    else bar.style.width=item.status==='Sent command'?'100%':'35%';
+    if(item.status==='Sending command'&&!animate)bar.style.width='65%';
+    return {box,bar,audio};
+  }
+
+  async function sendRecording(){
+    if(active){
+      pendingSend=true;
+      stopRecording(true);
+      return;
+    }
+    if(isSending)return;
+    const text=cleanTranscript(finalText+' '+interimText);
+    if(!hasMeaningfulTranscript(text)){
+      stateEl.textContent='● No voice detected';
+      hint.textContent='No speech detected. Please try again.';
+      inputShell.classList.add('voice-warning');
+      showVoiceWarning();
+      setTimeout(()=>inputShell.classList.remove('voice-warning'),1800);
+      resetLocal(false);
+      resetWave();
+      return;
+    }
+    isSending=true;
+    pendingSend=false;
+    sendBtn.classList.remove('show');
+    stateEl.textContent='● Sending';
+    let audioData='';
+    try{if(blob)audioData=await dataUrlFromBlob(blob)}catch(e){}
+    const item={audio:audioData,text:text||'Voice command',iso:dateNow(),timeLabel:timeNow(),duration:duration(Date.now()-startedAt),status:'Sending command',failed:false};
+    const ui=addMessage(item,true);
+    let ok=false;
+    try{
+      const zr=await window.ZV.handleSpeech(item.text,getAlts());
+      ok=!!zr.ok;item.matched=zr.label||'';item.reason=zr.reason||'';
+    }catch(e){ok=false}
+    item.status=ok?('Sent \u00b7 '+(item.matched||'command')):(item.reason||'Failed to send');
+    item.failed=!ok;
+    const status=ui.box.querySelector('.qt-voice-status');
+    const detailVals=ui.box.querySelectorAll('.qt-voice-detail-val');
+    status.textContent=item.status;
+    if(detailVals[2])detailVals[2].textContent=item.status;
+    ui.box.classList.toggle('failed',!ok);
+    ui.bar.style.width=ok?'100%':'25%';
+    const history=readHistory();history.unshift({...item});writeHistory(history);
+    isSending=false;
+    stateEl.textContent=ok?'● Sent':'● Send failed';
+    renderHistory();
+    resetLocal(false);
+  }
+
+  function resetLocal(clearView){
+    segAlts=[];
+    finalText='';interimText='';blob=null;chunks=[];startedAt=0;voiceDetected=false;sendBtn.classList.remove('show');pendingSend=false;if(clearView){messages.innerHTML='';}hint.textContent='Tap the mic to start';stateEl.textContent='● Ready';
+  }
+
+  function resetRecording(){cancelled=true;if(active)stopRecording(false);else cancelled=false;stopRecognition();clearTimers();showLive('');resetLocal(false);resetWave()}
+
+  function renderHistory(){
+    const list=readHistory();historyList.innerHTML='';
+    if(!list.length){historyList.innerHTML='';return}
+    list.forEach(item=>{
+      const row=document.createElement('div');row.className='qt-voice-history-item';row.innerHTML='<div class="qt-voice-history-main"><div class="qt-voice-history-title">'+escapeHtml(item.text||'Voice command')+'</div><div class="qt-voice-history-meta"><span>'+escapeHtml(fmtDate(item.iso))+'</span><span>'+escapeHtml(item.status||'Sent command')+'</span><span>'+escapeHtml(item.duration||'0:01')+'</span></div></div><audio class="qt-voice-history-audio" controls preload="metadata"></audio>';
+      const a=row.querySelector('audio');if(item.audio)a.src=item.audio;historyList.appendChild(row);
+    });
+  }
+
+  micBtn.addEventListener('click',()=>{if(active)stopRecording(!autoSend.checked);else startRecording()});
+  sendBtn.addEventListener('click',()=>{pendingSend=true;sendRecording()});
+  resetBtn.addEventListener('click',resetRecording);
+  autoSend.addEventListener('change',()=>{sendBtn.classList.toggle('show',!autoSend.checked&&active)});
+  speakTab.addEventListener('click',()=>setTab('speak'));historyTab.addEventListener('click',()=>setTab('history'));
+  closeBtn.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();closeVoice()},{capture:true});
+  closeBtn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();closeVoice()},{capture:true});
+  document.addEventListener('click',e=>{if(e.target===closeBtn||e.target.closest&&e.target.closest('#qtVoiceCloseBtn')){e.preventDefault();e.stopPropagation();closeVoice();}},true);
+  window.addEventListener('resize',resizeCanvas);
+  window.addEventListener('beforeunload',()=>{releaseMicrophone();});
+})();
+</script>
+
+<script type="text/plain" id="zvCreatorDoc"><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Gesture — Zippy</title>
+<style>
+  :root{--bg:#0e0f11;--panel:#17181b;--panel-2:#1f2124;--border:#2a2c30;--text:#e8e6e1;--text-dim:#8b8d92;--accent:#5dcaa5;--accent-dim:#1d9e75;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #app{display:flex;width:100vw;height:calc(100vh - 49px);}
+  #viewport{flex:1;position:relative;min-width:0;}
+  #canvas-host{position:absolute;inset:0;}
+  #canvas-host canvas{display:block;width:100%;height:100%;}
+  #status{position:absolute;top:16px;left:16px;font-size:12px;color:var(--text-dim);background:rgba(23,24,27,0.85);border:1px solid var(--border);padding:6px 10px;border-radius:6px;display:flex;align-items:center;gap:6px;}
+  #status .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+  #status.loading .dot{background:#e0a02f;}
+  #panel{width:300px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;}
+  #panel-header{padding:20px 20px 12px;border-bottom:1px solid var(--border);}
+  #panel-header h1{font-size:15px;font-weight:600;margin:0 0 4px;letter-spacing:-0.01em;}
+  #panel-header p{font-size:12px;color:var(--text-dim);margin:0;line-height:1.5;}
+  .section{padding:16px 20px;border-bottom:1px solid var(--border);}
+  .section-title{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-dim);margin:0 0 12px;font-weight:600;}
+  .finger-row{margin-bottom:14px;}
+  .finger-row:last-child{margin-bottom:0;}
+  .finger-label{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;margin-bottom:6px;}
+  .finger-label span:last-child{color:var(--text-dim);font-size:11px;font-variant-numeric:tabular-nums;}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;background:var(--panel-2);outline:none;border:1px solid var(--border);}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg);}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg);}
+  .btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+  button{font-family:inherit;font-size:12px;font-weight:500;background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 12px;cursor:pointer;transition:background 0.15s,border-color 0.15s;}
+  button:hover{background:#26282c;border-color:#3a3c40;}
+  button:active{transform:scale(0.98);}
+  button.primary{background:var(--accent-dim);border-color:var(--accent-dim);color:#eafff5;}
+  button.primary:hover{background:#0f7e60;}
+  #cache-info{font-size:11px;color:var(--text-dim);line-height:1.6;background:var(--panel-2);border-radius:6px;padding:10px 12px;border:1px solid var(--border);}
+  .hint{font-size:11px;color:var(--text-dim);line-height:1.5;margin-top:10px;}
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:#2a2c30;border-radius:4px;}
+  #topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 18px;background:var(--panel);border-bottom:1px solid var(--border);flex-wrap:wrap;row-gap:10px;}
+  #topbar .tb-left{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  #topbar .tb-title{font-size:14px;font-weight:600;letter-spacing:-0.01em;}
+  #topbar .tb-title span{color:var(--text-dim);font-weight:400;font-size:12px;margin-left:8px;}
+  #topbar .tb-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .video-toggle{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-dim);}
+  .switch{position:relative;width:38px;height:22px;flex-shrink:0;}
+  .switch input{opacity:0;width:0;height:0;}
+  .switch .track{position:absolute;inset:0;background:var(--panel-2);border:1px solid var(--border);border-radius:999px;transition:background .2s,border-color .2s;cursor:pointer;}
+  .switch .knob{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--text-dim);transition:transform .2s,background .2s;}
+  .switch input:checked + .track{background:var(--accent-dim);border-color:var(--accent-dim);}
+  .switch input:checked + .track .knob{transform:translateX(16px);background:#eafff5;}
+  .save-pos-wrap{height:0;overflow:visible;position:relative;}
+  .save-pos-pill{display:flex;align-items:center;gap:6px;max-height:0;opacity:0;transform:translateY(-4px);overflow:hidden;transition:max-height .22s ease,opacity .22s ease,transform .22s ease,margin-top .22s ease;margin-top:0;}
+  .save-pos-pill.show{max-height:40px;opacity:1;transform:translateY(0);margin-top:8px;}
+  .save-pos-pill button{font-size:11px;padding:6px 10px;background:var(--accent-dim);border-color:var(--accent-dim);color:#eafff5;}
+  .save-pos-pill button:hover{background:#0f7e60;}
+  .save-pos-pill .label{font-size:10.5px;color:var(--text-dim);}
+  #sequence-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+  .seq-step{display:flex;align-items:center;gap:10px;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;}
+  .seq-step .seq-thumb{width:40px;height:40px;border-radius:6px;flex-shrink:0;overflow:hidden;background:#46433d;border:1px solid var(--border);}
+  .seq-step .seq-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .seq-step .seq-body{flex:1;min-width:0;}
+  .seq-step .seq-meta{font-size:10.5px;color:var(--text-dim);margin-top:2px;}
+  .seq-step .seq-delay{display:flex;align-items:center;gap:5px;flex-shrink:0;}
+  .seq-step .seq-delay input{width:52px;background:var(--panel);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:11px;padding:4px 5px;text-align:right;}
+  .seq-step .seq-delay span{font-size:10px;color:var(--text-dim);}
+  .seq-step .seq-remove{background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:5px;padding:5px 7px;font-size:12px;line-height:1;flex-shrink:0;}
+  .seq-step .seq-remove:hover{color:#e05252;border-color:#e05252;}
+  .seq-empty{font-size:11.5px;color:var(--text-dim);padding:14px 10px;text-align:center;border:1px dashed var(--border);border-radius:8px;}
+  .seq-step .seq-drag{cursor:grab;color:var(--text-dim);font-size:14px;padding:2px 4px;flex-shrink:0;user-select:none;}
+  .seq-step.dragging{opacity:0.4;}
+  .seq-step .seq-name-input{width:100%;background:transparent;border:none;border-bottom:1px dashed transparent;color:var(--text);font-size:12px;font-weight:600;font-family:inherit;padding:0;}
+  .seq-step .seq-name-input:focus{outline:none;border-bottom-color:var(--accent);}
+  .seq-step.group .seq-title-badge{display:inline-block;font-size:9px;text-transform:uppercase;letter-spacing:.04em;background:var(--accent-dim);color:#eafff5;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle;}
+  .transport{display:flex;align-items:center;gap:8px;margin-top:4px;}
+  .transport button{padding:8px 12px;}
+  .transport .scrub{font-size:11px;color:var(--text-dim);margin-left:auto;}
+  #preview-overlay{position:fixed;inset:0;background:rgba(8,9,10,0.72);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:200;padding:24px;}
+  #preview-overlay.open{display:flex;}
+  #preview-modal{width:min(880px,100%);max-height:92vh;overflow-y:auto;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:22px;}
+  #preview-modal h2{font-size:16px;margin:0 0 4px;}
+  #preview-modal p.sub{font-size:12px;color:var(--text-dim);margin:0 0 18px;}
+  .preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media (max-width:640px){.preview-grid{grid-template-columns:1fr;}}
+  .preview-card{background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:14px;}
+  .preview-card h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);margin:0 0 10px;}
+  .preview-img-frame{width:100%;aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:#000;position:relative;}
+  .preview-img-frame img,.preview-img-frame video{width:100%;height:100%;object-fit:cover;display:block;}
+  .preview-card .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .angle-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+  .angle-chip{font-size:10.5px;padding:5px 9px;border-radius:999px;border:1px solid var(--border);background:var(--panel);color:var(--text-dim);cursor:pointer;}
+  .angle-chip.active{background:var(--accent-dim);border-color:var(--accent-dim);color:#eafff5;}
+  .preview-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;flex-wrap:wrap;}
+  .preview-footer button{padding:10px 16px;}
+  #preview-save-publish{display:none!important}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--panel-2);border:1px solid var(--border);color:var(--text);font-size:12px;padding:10px 16px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease;z-index:300;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .warn-toast{position:fixed;top:64px;left:16px;display:flex;align-items:center;gap:8px;background:#3a2420;border:1px solid #7a3a2e;color:#ffd9cf;font-size:12px;padding:10px 14px;border-radius:8px;max-width:340px;line-height:1.4;transform:translateX(-120%);opacity:0;transition:transform .32s cubic-bezier(.2,.8,.2,1),opacity .32s ease;z-index:300;box-shadow:0 6px 18px rgba(0,0,0,0.35);pointer-events:none;}
+  .warn-toast.show{transform:translateX(0);opacity:1;}
+  .lib-overlay{position:fixed;inset:0;background:rgba(10,10,12,.72);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:400;padding:24px;}
+  .lib-overlay.open{display:flex;}
+  .lib-box{width:min(680px,100%);max-height:86vh;display:flex;flex-direction:column;background:#1a1a1e;border:1px solid #2e2e34;border-radius:14px;overflow:hidden;box-shadow:0 30px 70px -30px rgba(0,0,0,.8);}
+  .lib-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid #2e2e34;}
+  .lib-bar h3{margin:0;font-size:15px;font-weight:600;color:#f2f2f4;}
+  .lib-close{background:none;border:0;color:#9a9aa2;font-size:15px;cursor:pointer;padding:4px 8px;}
+  .lib-close:hover{color:#f2f2f4;}
+  .lib-note{margin:0;padding:12px 18px 4px;font-size:12px;line-height:1.5;color:#9a9aa2;}
+  .lib-list{overflow:auto;padding:12px 18px 18px;display:flex;flex-direction:column;gap:10px;}
+  .lib-item{display:flex;align-items:center;gap:14px;padding:10px;border:1px solid #2e2e34;border-radius:10px;background:#202026;cursor:pointer;transition:border-color .15s,background .15s;}
+  .lib-item:hover{border-color:#4a9a7a;background:#24242b;}
+  .lib-thumb{width:72px;height:72px;flex:0 0 72px;border-radius:8px;background:#46433d;object-fit:cover;display:block;}
+  .lib-meta{min-width:0;flex:1;}
+  .lib-name{font-size:14px;font-weight:600;color:#f2f2f4;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lib-sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#9a9aa2;line-height:1.6;}
+  .lib-load{flex:0 0 auto;padding:7px 14px;border-radius:7px;border:0;background:#2f9e6e;color:#fff;font-size:12px;font-weight:600;cursor:pointer;}
+  .lib-empty{padding:26px 4px;text-align:center;color:#9a9aa2;font-size:13px;line-height:1.6;}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div class="tb-left"><div class="tb-title">Create Gesture<span>Zippy Gesture Library</span></div></div>
+  <div class="tb-right">
+    <button id="upload-gesture-btn">Upload a gesture from Gesture Library</button>
+    <button class="back-link" id="gesture-library-btn" type="button">✕ Close</button>
+    <button id="save-gesture-top" class="primary">Save Gesture</button>
+  </div>
+</div>
+
+<div id="app">
+  <div id="viewport">
+    <div id="canvas-host"></div>
+    <div id="status" class="loading"><div class="dot"></div><span id="status-text">Building hand model…</span></div>
+  </div>
+
+  <div id="panel">
+    <div id="panel-header">
+      <h1>Create a gesture</h1>
+      <p>Move any joint below, then tap <strong>Save position</strong> to lock that pose in as the next step of the motion. Build up as many steps as you like, set the delay between each, then preview and publish.</p>
+    </div>
+
+    <div class="section" id="sequence-section">
+      <p class="section-title">Motion sequence</p>
+      <div class="btn-row" style="margin-bottom:12px"><button id="save-group-btn" class="primary">Save Group</button></div>
+      <div class="hint" style="margin-top:0;margin-bottom:12px">Move several joints without tapping the per-slider Save position button, then tap <strong>Save Group</strong> to capture everything that changed since the last step as one combined move, played back smoothly.</div>
+      <div id="sequence-list">
+        <div class="seq-empty" id="sequence-empty">No positions saved yet — move a joint and tap Save position, or move several and tap Save Group.</div>
+      </div>
+      <div class="hint">Drag the ⠿ handle to reorder steps. Click a step's name to rename it. Steps play back with smooth, interpolated motion between each position — not an instant jump — using the delay set on each step.</div>
+      <div class="transport">
+        <button id="play-sequence">▶ Play</button>
+        <button id="pause-sequence" disabled>❚❚ Pause</button>
+        <span class="scrub" id="sequence-count">0 steps</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <p class="section-title">Fingers</p>
+      <div class="finger-row">
+        <div class="finger-label"><span>Thumb</span><span id="out-thumb">0°</span></div>
+        <input type="range" id="thumb" min="0" max="90" value="0" step="1">
+        <div class="save-pos-wrap"><div class="save-pos-pill" data-for="thumb"><button class="save-pos-btn">Save position</button><span class="label">as next step</span></div></div>
+      </div>
+      <div class="finger-row">
+        <div class="finger-label"><span>Index</span><span id="out-index">0°</span></div>
+        <input type="range" id="index" min="0" max="100" value="0" step="1">
+        <div class="save-pos-wrap"><div class="save-pos-pill" data-for="index"><button class="save-pos-btn">Save position</button><span class="label">as next step</span></div></div>
+      </div>
+      <div class="finger-row">
+        <div class="finger-label"><span>Middle</span><span id="out-middle">0°</span></div>
+        <input type="range" id="middle" min="0" max="100" value="0" step="1">
+        <div class="save-pos-wrap"><div class="save-pos-pill" data-for="middle"><button class="save-pos-btn">Save position</button><span class="label">as next step</span></div></div>
+      </div>
+      <div class="finger-row">
+        <div class="finger-label"><span>Ring</span><span id="out-ring">0°</span></div>
+        <input type="range" id="ring" min="0" max="100" value="0" step="1">
+        <div class="save-pos-wrap"><div class="save-pos-pill" data-for="ring"><button class="save-pos-btn">Save position</button><span class="label">as next step</span></div></div>
+      </div>
+      <div class="finger-row">
+        <div class="finger-label"><span>Pinky</span><span id="out-pinky">0°</span></div>
+        <input type="range" id="pinky" min="0" max="100" value="0" step="1">
+        <div class="save-pos-wrap"><div class="save-pos-pill" data-for="pinky"><button class="save-pos-btn">Save position</button><span class="label">as next step</span></div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <p class="section-title">Wrist</p>
+      <div class="finger-row">
+        <div class="finger-label"><span>Rotation</span><span id="out-wrist">70°</span></div>
+        <input type="range" id="wrist-slider" min="0" max="180" value="90" step="1">
+        <div class="save-pos-wrap"><div class="save-pos-pill" data-for="wrist-slider"><button class="save-pos-btn">Save position</button><span class="label">as next step</span></div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <p class="section-title">Arm</p>
+      <div class="finger-row">
+        <div class="finger-label"><span>Elbow joint</span><span id="out-arm">0°</span></div>
+        <input type="range" id="arm-slider" min="68" max="110" value="68" step="1">
+        <div class="save-pos-wrap"><div class="save-pos-pill" data-for="arm-slider"><button class="save-pos-btn">Save position</button><span class="label">as next step</span></div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <p class="section-title">Shoulder</p>
+      <div class="finger-row">
+        <div class="finger-label"><span>Rotation 1</span><span id="out-shoulder">0°</span></div>
+        <input type="range" id="shoulder-slider" min="65" max="98" value="98" step="1" style="direction:rtl">
+        <div class="save-pos-wrap"><div class="save-pos-pill" data-for="shoulder-slider"><button class="save-pos-btn">Save position</button><span class="label">as next step</span></div></div>
+      </div>
+      <div class="finger-row">
+        <div class="finger-label"><span>Rotation 2 (lift)</span><span id="out-abduction">0°</span></div>
+        <input type="range" id="abduction-slider" min="26" max="70" value="26" step="1">
+        <div class="save-pos-wrap"><div class="save-pos-pill" data-for="abduction-slider"><button class="save-pos-btn">Save position</button><span class="label">as next step</span></div></div>
+      </div>
+      <div class="finger-row">
+        <div class="finger-label"><span>Extend joint</span><span id="out-extend">0°</span></div>
+        <input type="range" id="extend-slider" min="0" max="14" value="0" step="1">
+        <div class="save-pos-wrap"><div class="save-pos-pill" data-for="extend-slider"><button class="save-pos-btn">Save position</button><span class="label">as next step</span></div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <p class="section-title">Camera</p>
+      <div class="btn-row"><button id="autofocus-toggle" class="primary">Follow camera: On</button></div>
+      <div class="hint">When on, the camera follows the motion — it stays square-on to the palm as the wrist turns, and tightens on whichever joints just moved. Drag or scroll the viewport to take manual control — it turns back on automatically the next time you use a slider, or tap the button to disable it entirely.</div>
+      <div class="video-toggle" style="margin-top:14px">
+        <label class="switch"><input type="checkbox" id="camera-mode-toggle"><span class="track"><span class="knob"></span></span></label>
+        <span id="camera-mode-label">Follow camera</span>
+      </div>
+      <div class="hint" id="camera-mode-hint">Follow camera: the shot tracks the palm and tightens on whatever joints just moved, for close-up detail shots. Switch off for one distant, unmoving wide angle that keeps the whole arm — shoulder to fingertips — in frame for every photo and every frame of the motion, so you can watch the entire arm move without the camera cutting or panning.</div>
+      <div class="finger-row" style="margin-top:14px">
+        <div class="finger-label"><span>Arm shot zoom</span><span id="out-arm-zoom">100%</span></div>
+        <input type="range" id="arm-zoom-slider" min="50" max="200" value="100" step="5">
+        <div class="hint" style="margin-top:6px">Zooms the arm/elbow and full-arm camera views in or out. Doesn't affect the finger close-up.</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <p class="section-title">Presets</p>
+      <div class="btn-row">
+        <button id="preset-open">Open</button>
+        <button id="preset-fist">Fist</button>
+        <button id="preset-point">Point</button>
+        <button id="preset-peace">Peace</button>
+        <button id="preset-thumbsup" class="primary">Thumbs up</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <p class="section-title">Device cache</p>
+      <div id="cache-info">No external model in use — this hand is generated in code, so there is nothing to cache.</div>
+    </div>
+  </div>
+</div>
+
+<div id="preview-overlay">
+  <div id="preview-modal">
+    <h2>Preview your gesture</h2>
+    <p class="sub">Check the cover image and the looping motion before you save. You can recapture the image or change camera angles at any point.</p>
+    <div class="preview-grid">
+      <div class="preview-card" style="grid-column:1/-1">
+        <h3>Steps — reorder &amp; rename</h3>
+        <div id="preview-sequence-list" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div class="hint">Same list as the editor — drag ⠿ to reorder, click a name to rename. Changes here apply to the saved gesture.</div>
+      </div>
+      <div class="preview-card">
+        <h3>Image preview</h3>
+        <div class="preview-img-frame" id="preview-img-frame"><img id="preview-img" alt="Gesture preview"></div>
+        <div class="row"><button id="recapture-btn">Capture again</button></div>
+        <div class="angle-row" id="image-angle-row">
+          <span class="angle-chip" data-angle="auto">Best angle</span>
+          <span class="angle-chip" data-angle="front">Front</span>
+          <span class="angle-chip" data-angle="side">Side</span>
+          <span class="angle-chip" data-angle="wide">Wide</span>
+        </div>
+      </div>
+      <div class="preview-card">
+        <h3>Motion preview</h3>
+        <div class="preview-img-frame" id="preview-video-frame"><canvas id="preview-video-canvas" style="width:100%;height:100%;display:block;object-fit:cover;"></canvas></div>
+        <div class="row">
+          <button id="preview-play">▶ Play loop</button>
+          <button id="preview-pause" disabled>❚❚ Pause</button>
+          <button id="preview-camera-mode-toggle">Fixed camera: Off</button>
+        </div>
+        <div class="hint" id="preview-camera-mode-hint">Fixed camera off: the shot tracks whatever joints just moved. Turn on for one unmoving wide angle that keeps the whole arm in frame for every frame of the motion.</div>
+        <div class="angle-row" id="video-angle-row">
+          <span class="angle-chip" data-angle="auto">Auto per-step</span>
+          <span class="angle-chip" data-angle="front">Front</span>
+          <span class="angle-chip" data-angle="side">Side</span>
+          <span class="angle-chip" data-angle="wide">Wide</span>
+        </div>
+        <div class="hint">This replays the actual recorded joint values step by step — the same pose data driving the real device — easing smoothly between each saved position using its delay, on a loop. It's not a baked video file: anywhere this gesture is shown later re-plays these exact values live.</div>
+      </div>
+    </div>
+    <div class="preview-footer">
+      <button id="preview-cancel">Keep editing</button>
+      <button id="preview-save-gesture" class="primary">Save Gesture</button>
+      <button id="preview-save-publish" class="primary">Save & Publish to Library</button>
+    </div>
+  </div>
+</div>
+
+<div class="lib-overlay" id="lib-overlay">
+  <div class="lib-box">
+    <div class="lib-bar">
+      <h3>Load a gesture from your library</h3>
+      <button class="lib-close" id="lib-close" aria-label="Close">&#10005;</button>
+    </div>
+    <p class="lib-note">Everything loads into the editor — every step, its pose, its delay and its captured photo. Edit freely and save it as a new gesture; the original in your library is left untouched.</p>
+    <div class="lib-list" id="lib-list"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="warn-toast" id="warn-toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>
+<script>
+window.motorOf=function(id,v){
+  var T={thumb:[0,90,0,180],index:[0,100,0,180],middle:[0,100,0,180],ring:[0,100,0,180],pinky:[0,100,0,180],
+    'wrist-slider':[0,180,0,130,90,70],'arm-slider':[68,110,0,360],'shoulder-slider':[98,65,0,360],'abduction-slider':[26,70,0,360],'extend-slider':[0,14,0,360]}[id];
+  if(!T||v==null||isNaN(v))return v;
+  var u0=T[0],u1=T[1],s0=T[2],s1=T[3];
+  if(T.length>4){var nu=T[4],ns=T[5];return v<=nu?ns+(s0-ns)*((nu-v)/(nu-u0)):ns+(s1-ns)*((v-nu)/(u1-nu))}
+  return s0+(s1-s0)*((v-u0)/(u1-u0));
+};
+<\/script>
+<script>
+(function(){
+  var statusEl = document.getElementById('status');
+  var statusText = document.getElementById('status-text');
+  function setStatus(text, loading){
+    statusText.textContent = text;
+    statusEl.classList.toggle('loading', !!loading);
+  }
+
+  var host = document.getElementById('canvas-host');
+  var scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x46433d);
+
+  var camera = new THREE.PerspectiveCamera(40, host.clientWidth/host.clientHeight, 0.1, 100);
+  camera.position.set(0, 1.2, 5.5);
+  camera.lookAt(0, 0.5, 0);
+
+  var renderer = new THREE.WebGLRenderer({ antialias:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(host.clientWidth, host.clientHeight);
+  renderer.shadowMap.enabled = true;
+  host.appendChild(renderer.domElement);
+
+  var key = new THREE.DirectionalLight(0xffffff, 1.3);
+  key.position.set(3, 5, 4);
+  key.castShadow = true;
+  key.shadow.mapSize.set(1024,1024);
+  scene.add(key);
+  var fill = new THREE.DirectionalLight(0x88aaff, 0.4);
+  fill.position.set(-4, 2, -2);
+  scene.add(fill);
+  scene.add(new THREE.AmbientLight(0x404040, 0.75));
+  var armLight = new THREE.DirectionalLight(0xffffff, 0.5);
+  armLight.position.set(-2, -3, 5);
+  scene.add(armLight);
+
+  var ground = new THREE.Mesh(new THREE.PlaneGeometry(20,20), new THREE.MeshStandardMaterial({ color:0x46433d, roughness:1 }));
+  ground.rotation.x = -Math.PI/2;
+  ground.position.y = -7.2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  var isDragging = false, prevX=0, prevY=0;
+  var camTheta=0.35, camPhi=1.15, camDist=5.5;
+  var focusY = 0.3, targetFocusY = 0.3;
+  var focusDistOffset = 0, targetFocusDistOffset = 0;
+  var autoFocusActive = true;
+  var autoFocusMode = 'hand';
+  var camPos = new THREE.Vector3(0, 1.2, 5.5);
+  var camLookAt = new THREE.Vector3(0, 0.3, 0);
+
+  var armZoomPercent = 100;
+  function getArmZoomScale(){ return armZoomPercent / 100; }
+  var lastArmFocusFn = null;
+  function setArmZoomPercent(pct){
+    armZoomPercent = Math.max(50, Math.min(200, pct));
+    if (lastArmFocusFn) lastArmFocusFn();
+  }
+
+  function updateCam(){
+    if (autoFocusMode === 'manual-orbit' || !palmAnchor){
+      var dist = camDist + focusDistOffset;
+      var px = dist * Math.sin(camPhi) * Math.sin(camTheta);
+      var pz = dist * Math.sin(camPhi) * Math.cos(camTheta);
+      var py = dist * Math.cos(camPhi) + focusY;
+      camPos.set(px, py, pz);
+      camLookAt.set(0, focusY, 0);
+      camera.position.copy(camPos);
+      camera.lookAt(camLookAt);
+      return;
+    }
+    if (autoFocusMode === 'wrist'){ updateWristTrack(); }
+    camPos.lerp(handTargetPos, 0.045);
+    camLookAt.lerp(handTargetLookAt, 0.045);
+    camera.up.set(0, 1, 0);
+    camera.position.copy(camPos);
+    camera.lookAt(camLookAt);
+  }
+  updateCam();
+
+  var handTargetPos = new THREE.Vector3(0, 1.2, 5.5);
+  var handTargetLookAt = new THREE.Vector3(0, 0.3, 0);
+  var handTargetUp = new THREE.Vector3(0, 1, 0);
+
+  var handBox = new THREE.Box3();
+  var handBoxCenter = new THREE.Vector3();
+  var handBoxSize = new THREE.Vector3();
+  var FILL_FRACTION = 0.72;
+  var FINGER_VIEW_POS = null;
+  var FINGER_VIEW_LOOKAT = null;
+  var fingerViewStale = true;
+
+  function computeFingerView(){
+    scene.updateMatrixWorld(true);
+    handBox.setFromObject(handGroup);
+    handBox.getCenter(handBoxCenter);
+    handBox.getSize(handBoxSize);
+    var radius = handBoxSize.length() * 0.5;
+    var vFov = camera.fov * Math.PI / 180;
+    var aspect = camera.aspect || (host.clientWidth / host.clientHeight);
+    var hFov = 2 * Math.atan(Math.tan(vFov/2) * aspect);
+    var limitingFov = Math.min(vFov, hFov);
+    var dist = (radius / FILL_FRACTION) / Math.sin(limitingFov/2);
+    dist = Math.max(dist, 1.5);
+    var palmNormal = new THREE.Vector3(0, 0, 1);
+    palmNormal.transformDirection(palmAnchor.matrixWorld).normalize();
+    var dir = palmNormal.clone().add(new THREE.Vector3(0, 0.18, 0)).normalize();
+    FINGER_VIEW_POS = handBoxCenter.clone().addScaledVector(dir, dist);
+    FINGER_VIEW_LOOKAT = handBoxCenter.clone();
+  }
+
+  function focusFingers(forceRecompute){
+    isDragging = false;
+    autoFocusMode = 'hand';
+    if (forceRecompute || !FINGER_VIEW_POS || fingerViewStale){
+      computeFingerView();
+      fingerViewStale = false;
+    }
+    handTargetPos.copy(FINGER_VIEW_POS);
+    handTargetLookAt.copy(FINGER_VIEW_LOOKAT);
+    handTargetUp.set(0, 1, 0);
+    if (autoFocusEnabled) autoFocusActive = true;
+  }
+
+  var WRIST_VIEW_DIST = 6.4;
+  var WRIST_VIEW_HEIGHT_OFFSET = 0.55;
+  var WRIST_VIEW_POS = null;
+  var WRIST_VIEW_LOOKAT = null;
+  var wristViewStale = true;
+  function focusWrist(forceRecompute){
+    isDragging = false;
+    autoFocusMode = 'hand';
+    lastArmFocusFn = focusWrist;
+    if (forceRecompute || !WRIST_VIEW_POS || wristViewStale){
+      updateWristTrack();
+      WRIST_VIEW_POS = handTargetPos.clone();
+      WRIST_VIEW_LOOKAT = handTargetLookAt.clone();
+      wristViewStale = false;
+    } else {
+      handTargetPos.copy(WRIST_VIEW_POS);
+      handTargetLookAt.copy(WRIST_VIEW_LOOKAT);
+    }
+    if (autoFocusEnabled) autoFocusActive = true;
+  }
+  function updateWristTrack(){
+    scene.updateMatrixWorld(true);
+    var palmWorld = new THREE.Vector3();
+    palmAnchor.getWorldPosition(palmWorld);
+    var palmNormal = new THREE.Vector3(0, 0, 1);
+    palmNormal.transformDirection(palmAnchor.matrixWorld).normalize();
+    var camZoom = getArmZoomScale();
+    var pos = palmWorld.clone().addScaledVector(palmNormal, WRIST_VIEW_DIST * camZoom);
+    pos.y += WRIST_VIEW_HEIGHT_OFFSET;
+    handTargetPos.copy(pos);
+    handTargetLookAt.copy(palmWorld);
+    handTargetUp.set(0, 1, 0);
+  }
+
+  var SHOULDER_VIEW_POS_OFFSET = new THREE.Vector3(0.6, 0.4, 8.5);
+  var SHOULDER_VIEW_LOOKAT_OFFSET = new THREE.Vector3(0, 0, 0);
+  function focusShoulder(){
+    isDragging = false;
+    autoFocusMode = 'hand';
+    lastArmFocusFn = focusShoulder;
+    scene.updateMatrixWorld(true);
+    var shoulderWorld = new THREE.Vector3();
+    shoulderAnchor.getWorldPosition(shoulderWorld);
+    var zoom = getArmZoomScale();
+    handTargetPos.copy(shoulderWorld).add(SHOULDER_VIEW_POS_OFFSET.clone().multiplyScalar(zoom));
+    handTargetLookAt.copy(shoulderWorld).add(SHOULDER_VIEW_LOOKAT_OFFSET);
+    handTargetUp.set(0, 1, 0);
+    if (autoFocusEnabled) autoFocusActive = true;
+  }
+
+  var ABDUCTION_VIEW_POS_OFFSET = new THREE.Vector3(-5.0, 0.5, 3.0);
+  var ABDUCTION_VIEW_LOOKAT_OFFSET = new THREE.Vector3(0.3, -0.3, 0);
+  function focusAbduction(){
+    isDragging = false;
+    autoFocusMode = 'hand';
+    lastArmFocusFn = focusAbduction;
+    scene.updateMatrixWorld(true);
+    var pivotWorld = new THREE.Vector3();
+    abductionPivot.getWorldPosition(pivotWorld);
+    var zoom = getArmZoomScale();
+    handTargetPos.copy(pivotWorld).add(ABDUCTION_VIEW_POS_OFFSET.clone().multiplyScalar(zoom));
+    handTargetLookAt.copy(pivotWorld).add(ABDUCTION_VIEW_LOOKAT_OFFSET);
+    handTargetUp.set(0, 1, 0);
+    if (autoFocusEnabled) autoFocusActive = true;
+  }
+
+  function focusArm(){
+    isDragging = false;
+    autoFocusMode = 'hand';
+    lastArmFocusFn = focusArm;
+    scene.updateMatrixWorld(true);
+    var elbowWorld = new THREE.Vector3();
+    elbowPivot.getWorldPosition(elbowWorld);
+    var zoom = getArmZoomScale();
+    handTargetPos.copy(elbowWorld).add(ARM_VIEW_POS_OFFSET.clone().multiplyScalar(zoom));
+    handTargetLookAt.copy(elbowWorld).add(ARM_VIEW_LOOKAT_OFFSET);
+    handTargetUp.set(0, 1, 0);
+    if (autoFocusEnabled) autoFocusActive = true;
+  }
+
+  var autoFocusEnabled = true;
+  function setAutoFocusEnabled(on){
+    autoFocusEnabled = on;
+    autoFocusActive = on;
+    var btn = document.getElementById('autofocus-toggle');
+    if (btn){
+      btn.textContent = on ? 'Follow camera: On' : 'Follow camera: Off';
+      btn.classList.toggle('primary', on);
+    }
+  }
+
+  renderer.domElement.addEventListener('pointerdown', function(e){
+    isDragging=true; prevX=e.clientX; prevY=e.clientY;
+    autoFocusActive=false;
+    var lookAt = camLookAt.clone();
+    var offset = camera.position.clone().sub(lookAt);
+    var r = offset.length();
+    if (r > 0.001){
+      camDist = r;
+      focusDistOffset = 0;
+      focusY = lookAt.y;
+      targetFocusY = lookAt.y;
+      targetFocusDistOffset = 0;
+      camPhi = Math.acos(Math.max(-1, Math.min(1, offset.y / r)));
+      camTheta = Math.atan2(offset.x, offset.z);
+    }
+  });
+  window.addEventListener('pointerup', function(){ isDragging=false; });
+  window.addEventListener('pointermove', function(e){
+    if(!isDragging) return;
+    var dx = e.clientX - prevX, dy = e.clientY - prevY;
+    camTheta -= dx * 0.008;
+    camPhi = Math.max(0.5, Math.min(2.4, camPhi - dy * 0.008));
+    prevX = e.clientX; prevY = e.clientY;
+    autoFocusMode = 'manual-orbit';
+    camera.up.set(0,1,0);
+    updateCam();
+  });
+  renderer.domElement.addEventListener('wheel', function(e){
+    e.preventDefault();
+    camDist = Math.max(3, Math.min(10, camDist + e.deltaY*0.003));
+    autoFocusActive = false;
+    if (autoFocusMode === 'manual-orbit') updateCam();
+  }, { passive:false });
+
+  var shellColor = 0xf2ede2;
+  var skinMat = new THREE.MeshStandardMaterial({ color: shellColor, roughness:0.55, metalness:0.05 });
+  var jointMat = new THREE.MeshStandardMaterial({ color: 0x1c1c1e, roughness:0.4, metalness:0.3 });
+  var wireMat = new THREE.MeshStandardMaterial({ color: 0xd9502a, roughness:0.5, metalness:0.1 });
+  var slotMat = new THREE.MeshStandardMaterial({ color: 0x2a2622, roughness:0.6, metalness:0.1 });
+
+  var wristGroup = new THREE.Group();
+  var handGroup = new THREE.Group();
+  wristGroup.add(handGroup);
+  var palmAnchor;
+
+  (function buildMechanicalPalm(){
+    var palmShape = new THREE.Shape();
+    palmShape.moveTo(-0.60, -0.95);
+    palmShape.lineTo(-0.80, -0.55);
+    palmShape.lineTo(-0.80, 0.15);
+    palmShape.lineTo(-0.68, 0.78);
+    palmShape.lineTo(-0.48, 1.06);
+    palmShape.lineTo(-0.15, 1.12);
+    palmShape.lineTo(0.15, 1.12);
+    palmShape.lineTo(0.48, 0.98);
+    palmShape.lineTo(0.70, 0.78);
+    palmShape.lineTo(0.75, 0.05);
+    palmShape.lineTo(0.72, -0.55);
+    palmShape.lineTo(0.50, -0.95);
+    palmShape.lineTo(0.22, -1.12);
+    palmShape.lineTo(-0.22, -1.12);
+    palmShape.lineTo(-0.60, -0.95);
+    var palmGeo = new THREE.ExtrudeGeometry(palmShape, {depth:0.5,bevelEnabled:true,bevelThickness:0.05,bevelSize:0.04,bevelSegments:2,curveSegments:1});
+    palmGeo.translate(0, 0, -0.25);
+    var palm = new THREE.Mesh(palmGeo, skinMat);
+    palm.castShadow = true; palm.receiveShadow = true;
+    handGroup.add(palm);
+
+    palmAnchor = new THREE.Object3D();
+    palmAnchor.position.set(0, 0.05, 0.1);
+    handGroup.add(palmAnchor);
+
+    function seam(x, y, w, h, rotZ){
+      var seamMesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.02), slotMat);
+      seamMesh.position.set(x, y, 0.24);
+      if (rotZ) seamMesh.rotation.z = rotZ;
+      handGroup.add(seamMesh);
+    }
+    seam(-0.15, 0.05, 0.75, 0.03, 0.35);
+    seam(0.25, -0.35, 0.55, 0.03, -0.5);
+    seam(-0.55, -0.3, 0.03, 0.6, 0);
+  })();
+
+  var cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.6, 0.55, 16), jointMat);
+  cuff.position.set(0, -1.75, 0);
+  cuff.castShadow = true;
+  wristGroup.add(cuff);
+
+  var collar = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.56, 0.3, 16), skinMat);
+  collar.position.set(0, -1.475 + 0.15, 0);
+  collar.castShadow = true;
+  handGroup.add(collar);
+
+  var forearmMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness:0.45, metalness:0.06 });
+  var forearmJointMat = new THREE.MeshStandardMaterial({ color: 0x1c1c1e, roughness:0.4, metalness:0.3 });
+
+  var armAssembly = new THREE.Group();
+  armAssembly.position.set(0, 6.8, 0);
+  armAssembly.scale.x = -1;
+  scene.add(armAssembly);
+
+  var shoulderMat = new THREE.MeshStandardMaterial({ color: 0x161616, roughness:0.55, metalness:0.2 });
+  var shoulderCapMat = new THREE.MeshStandardMaterial({ color: 0xf5f2ea, roughness:0.5, metalness:0.04 });
+  var bicepTopRadius = 0.40;
+  var shoulderCylRadius = bicepTopRadius;
+  var shoulderCylHeight = 0.22;
+
+  var abductionPivot = new THREE.Group();
+  armAssembly.add(abductionPivot);
+
+  var extendPivot = new THREE.Group();
+  abductionPivot.add(extendPivot);
+
+  var jointHousingGroup = new THREE.Group();
+  extendPivot.add(jointHousingGroup);
+
+  var shoulderPivot = new THREE.Group();
+  extendPivot.add(shoulderPivot);
+
+  var capRadius = shoulderCylRadius;
+
+  var sideCylRadius = capRadius * 0.6;
+  var sideCylHeight = shoulderCylHeight * 0.9;
+  var shoulderSideCyl = new THREE.Mesh(new THREE.CylinderGeometry(sideCylRadius, sideCylRadius, sideCylHeight, 24), shoulderMat);
+  shoulderSideCyl.rotation.z = Math.PI / 2;
+  shoulderSideCyl.position.set(-sideCylHeight/2, shoulderCylHeight/2, 0);
+  shoulderSideCyl.castShadow = true;
+  shoulderSideCyl.receiveShadow = true;
+  jointHousingGroup.add(shoulderSideCyl);
+
+  var cubeSize = capRadius * 1.1;
+  var shoulderCap = new THREE.Mesh(new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize), shoulderCapMat);
+  shoulderCap.position.set(cubeSize/2, shoulderCylHeight/2, 0);
+  shoulderCap.castShadow = true;
+  shoulderCap.receiveShadow = true;
+  jointHousingGroup.add(shoulderCap);
+
+  var bigCylRadius = cubeSize * 0.8;
+  var bigCylHeight = shoulderCylHeight * 0.9;
+  var shoulderBigCyl = new THREE.Mesh(new THREE.CylinderGeometry(bigCylRadius, bigCylRadius, bigCylHeight, 24), shoulderMat);
+  shoulderBigCyl.rotation.z = Math.PI / 2;
+  shoulderBigCyl.position.set(cubeSize + bigCylHeight/2, shoulderCylHeight/2, 0);
+  shoulderBigCyl.castShadow = true;
+  shoulderBigCyl.receiveShadow = true;
+  jointHousingGroup.add(shoulderBigCyl);
+
+  var extraCylRadius = bigCylRadius * 0.85;
+  var extraCylHeight = bigCylHeight * 1.6;
+  var shoulderExtraCyl = new THREE.Mesh(new THREE.CylinderGeometry(extraCylRadius, extraCylRadius, extraCylHeight, 24), shoulderMat);
+  shoulderExtraCyl.rotation.z = Math.PI / 2;
+  shoulderExtraCyl.position.set(cubeSize + bigCylHeight + extraCylHeight/2, shoulderCylHeight/2, 0);
+  shoulderExtraCyl.castShadow = true;
+  shoulderExtraCyl.receiveShadow = true;
+  jointHousingGroup.add(shoulderExtraCyl);
+
+  var gyroSocketMat = shoulderMat;
+  var gyroBallMat = jointMat;
+
+  var gyroSocketRadius = extraCylRadius * 0.75;
+  var gyroSocketDepth = extraCylRadius * 0.55;
+  var gyroSocket = new THREE.Mesh(new THREE.CylinderGeometry(gyroSocketRadius, gyroSocketRadius, gyroSocketDepth, 20), gyroSocketMat);
+  gyroSocket.rotation.z = Math.PI / 2;
+  var gyroSocketX = cubeSize + bigCylHeight + extraCylHeight + gyroSocketDepth/2;
+  gyroSocket.position.set(gyroSocketX, shoulderCylHeight/2, 0);
+  gyroSocket.castShadow = true;
+  gyroSocket.receiveShadow = true;
+  jointHousingGroup.add(gyroSocket);
+
+  var gyroBallRadius = gyroSocketRadius * 0.85;
+  var gyroBallX = gyroSocketX + gyroSocketDepth/2;
+  var gyroBall = new THREE.Mesh(new THREE.SphereGeometry(gyroBallRadius, 20, 16), gyroBallMat);
+  gyroBall.position.set(gyroBallX, shoulderCylHeight/2, 0);
+  gyroBall.castShadow = true;
+  gyroBall.receiveShadow = true;
+  jointHousingGroup.add(gyroBall);
+
+  var gyroCube = new THREE.Mesh(new THREE.BoxGeometry(cubeSize*0.9, cubeSize*0.9, cubeSize*0.9), shoulderCapMat);
+  gyroCube.castShadow = true;
+  gyroCube.receiveShadow = true;
+  scene.add(gyroCube);
+
+  var gyroPinRadius = gyroBallRadius * 0.25;
+  var gyroPin = new THREE.Mesh(new THREE.CylinderGeometry(gyroPinRadius, gyroPinRadius, 1, 10), gyroBallMat);
+  gyroPin.castShadow = true;
+  scene.add(gyroPin);
+
+  var gyroBallWorld = new THREE.Vector3();
+  var gyroCubeOffset = new THREE.Vector3(-(gyroBallRadius + cubeSize*2.2), 0, 0);
+
+  function updateGyroCube(){
+    scene.updateMatrixWorld(true);
+    gyroBall.getWorldPosition(gyroBallWorld);
+    gyroCube.position.copy(gyroBallWorld).add(gyroCubeOffset);
+    gyroCube.rotation.set(0,0,0);
+    var mid = gyroBallWorld.clone().lerp(gyroCube.position, 0.5);
+    var dist = gyroBallWorld.distanceTo(gyroCube.position);
+    gyroPin.position.copy(mid);
+    gyroPin.scale.set(1, dist, 1);
+    var dir = gyroCube.position.clone().sub(gyroBallWorld).normalize();
+    var up = new THREE.Vector3(0,1,0);
+    gyroPin.quaternion.setFromUnitVectors(up, dir);
+  }
+
+  var shoulderBlock = new THREE.Mesh(new THREE.CylinderGeometry(shoulderCylRadius, shoulderCylRadius, shoulderCylHeight, 24), shoulderMat);
+  shoulderBlock.position.set(0, shoulderCylHeight/2, 0);
+  shoulderBlock.castShadow = true;
+  shoulderBlock.receiveShadow = true;
+  shoulderPivot.add(shoulderBlock);
+
+  var shoulderAnchor = new THREE.Group();
+  shoulderPivot.add(shoulderAnchor);
+
+  var shoulderCapDisc = new THREE.Mesh(new THREE.CircleGeometry(shoulderCylRadius, 24), shoulderCapMat);
+  shoulderCapDisc.rotation.x = -Math.PI/2;
+  shoulderCapDisc.position.set(0, 0.001, 0);
+  shoulderCapDisc.receiveShadow = true;
+  shoulderAnchor.add(shoulderCapDisc);
+
+  function setShoulderRotation(deg){ shoulderPivot.rotation.y = (deg - 90) * Math.PI / 180; }
+  function setAbductionRotation(deg){ abductionPivot.rotation.z = -deg * Math.PI / 180; }
+  function setExtendJoint(deg){ extendPivot.rotation.x = deg * Math.PI / 180; }
+
+  var elbowBallRadius = 0.4;
+  var cuffBottomRadius = 0.6;
+  var jointGap = 0.34;
+
+  var bicepLen = 2.0;
+  var bicepProfile = [
+    new THREE.Vector2(0.40, 0),
+    new THREE.Vector2(0.48, -bicepLen*0.18),
+    new THREE.Vector2(0.55, -bicepLen*0.42),
+    new THREE.Vector2(0.50, -bicepLen*0.68),
+    new THREE.Vector2(0.40, -bicepLen*0.88),
+    new THREE.Vector2(elbowBallRadius*1.15, -bicepLen*0.97),
+    new THREE.Vector2(elbowBallRadius*0.7, -bicepLen)
+  ];
+  var bicep = new THREE.Mesh(new THREE.LatheGeometry(bicepProfile, 20), forearmMat);
+  bicep.castShadow = true;
+  bicep.receiveShadow = true;
+  shoulderAnchor.add(bicep);
+
+  var elbowPivot = new THREE.Group();
+  elbowPivot.position.set(0, -bicepLen - jointGap, 0);
+  shoulderAnchor.add(elbowPivot);
+
+  var elbowBall = new THREE.Mesh(new THREE.SphereGeometry(elbowBallRadius, 24, 18), forearmJointMat);
+  elbowBall.castShadow = true;
+  elbowPivot.add(elbowBall);
+
+  var elbowAxle = new THREE.Mesh(new THREE.CylinderGeometry(elbowBallRadius*0.22, elbowBallRadius*0.22, jointGap*1.4, 12), forearmJointMat);
+  elbowAxle.position.set(0, jointGap*0.7, 0);
+  elbowAxle.castShadow = true;
+  elbowPivot.add(elbowAxle);
+
+  var forearmPivot = new THREE.Group();
+  elbowPivot.add(forearmPivot);
+
+  var forearmLen = 2.6;
+  var socketRadius = elbowBallRadius * 1.15;
+  var forearmProfile = [
+    new THREE.Vector2(socketRadius*0.7, 0),
+    new THREE.Vector2(socketRadius, forearmLen*0.03),
+    new THREE.Vector2(cuffBottomRadius*0.98, -forearmLen*0.10),
+    new THREE.Vector2(cuffBottomRadius*1.05, -forearmLen*0.22),
+    new THREE.Vector2(cuffBottomRadius*0.88, -forearmLen*0.45),
+    new THREE.Vector2(cuffBottomRadius*0.80, -forearmLen*0.66),
+    new THREE.Vector2(cuffBottomRadius*0.86, -forearmLen*0.85),
+    new THREE.Vector2(cuffBottomRadius, -forearmLen)
+  ];
+  var forearmGeo = new THREE.LatheGeometry(forearmProfile, 22);
+  var fPos = forearmGeo.attributes.position;
+  for (var fi=0; fi<fPos.count; fi++){
+    var fy = fPos.getY(fi);
+    var t = -fy / forearmLen;
+    var bow = Math.sin(t * Math.PI) * 0.05;
+    fPos.setZ(fi, fPos.getZ(fi) + bow);
+  }
+  fPos.needsUpdate = true;
+  forearmGeo.computeVertexNormals();
+  var forearm = new THREE.Mesh(forearmGeo, forearmMat);
+  forearm.position.y = -jointGap;
+  forearm.castShadow = true;
+  forearm.receiveShadow = true;
+  forearmPivot.add(forearm);
+
+  wristGroup.rotation.x = Math.PI;
+  wristGroup.position.set(0, -forearmLen - jointGap - 2.025, 0);
+  forearmPivot.add(wristGroup);
+
+  armAssembly.updateMatrixWorld(true);
+
+  var armSwingSpan = forearmLen + jointGap + 2.025;
+  var ARM_VIEW_POS_OFFSET = new THREE.Vector3(6.5, armSwingSpan * 0.32, 0);
+  var ARM_VIEW_LOOKAT_OFFSET = new THREE.Vector3(0, armSwingSpan * 0.05, 0);
+
+  var screw = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.08,10), jointMat);
+  screw.rotation.z = Math.PI/2;
+  screw.position.set(0.55, -0.05, 0.1);
+  handGroup.add(screw);
+
+  function buildFinger(segLens, segRad, baseX, baseY, baseZ, splay, rot){
+    var root = new THREE.Group();
+    root.position.set(baseX, baseY, baseZ);
+    if (rot){ root.rotation.set(rot.x||0, rot.y||0, rot.z||0); }
+    else { root.rotation.z = splay || 0; }
+    handGroup.add(root);
+
+    var joints = [];
+    var parent = root;
+    for (var i=0;i<segLens.length;i++){
+      var len = segLens[i];
+      var rTop = segRad[i];
+      var rBot = segRad[i+1] !== undefined ? segRad[i+1] : segRad[i]*0.85;
+
+      var pivot = new THREE.Group();
+      parent.add(pivot);
+
+      var geo = new THREE.CylinderGeometry(rTop, rBot, len, 8);
+      geo.translate(0, len/2, 0);
+      var mesh = new THREE.Mesh(geo, skinMat);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      pivot.add(mesh);
+
+      var hinge = new THREE.Mesh(new THREE.CylinderGeometry(rTop*0.92, rTop*0.92, rTop*1.7, 8), jointMat);
+      hinge.rotation.z = Math.PI/2;
+      hinge.castShadow = true;
+      pivot.add(hinge);
+      var jWire = new THREE.Mesh(new THREE.CylinderGeometry(rTop*0.1, rTop*0.1, len*0.7, 5), wireMat);
+      jWire.position.set(0, len*0.45, rTop*0.75);
+      pivot.add(jWire);
+
+      joints.push(pivot);
+
+      var next = new THREE.Group();
+      next.position.set(0, len, 0);
+      pivot.add(next);
+      parent = next;
+    }
+    var tip = new THREE.Mesh(new THREE.SphereGeometry(segRad[segRad.length-1]*0.85, 8, 6), skinMat);
+    parent.add(tip);
+    return { root: root, joints: joints };
+  }
+
+  var fingers = {
+    thumb:  buildFinger([0.5, 0.4], [0.23,0.19,0.15], -0.78, -0.05, 0.14, null, { x: -0.35, y: 0, z: 0.85 }),
+    index:  buildFinger([0.62, 0.42, 0.34],[0.16,0.135,0.11,0.09], -0.58, 0.98, 0.1, 0.08),
+    middle: buildFinger([0.68, 0.46, 0.36],[0.17,0.14,0.11,0.09], -0.18, 1.05, 0.1, 0.02),
+    ring:   buildFinger([0.62, 0.42, 0.33],[0.16,0.13,0.105,0.085], 0.22, 1.0, 0.1, -0.03),
+    pinky:  buildFinger([0.5, 0.34, 0.28], [0.135,0.11,0.09,0.075], 0.6, 0.84, 0.08, -0.1)
+  };
+
+  var thumbBase = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.26, 0.3, 10), skinMat);
+  thumbBase.position.set(-0.78, -0.05, 0.08);
+  thumbBase.rotation.z = 1.1;
+  thumbBase.rotation.x = -0.2;
+  thumbBase.castShadow = true;
+  handGroup.add(thumbBase);
+
+  var indexBase = new THREE.Mesh(new THREE.CylinderGeometry(0.155, 0.17, 0.22, 10), skinMat);
+  indexBase.position.set(-0.58, 0.9, 0.08);
+  indexBase.rotation.x = -0.25;
+  indexBase.castShadow = true;
+  handGroup.add(indexBase);
+
+  var pinkyBase = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.145, 0.2, 10), skinMat);
+  pinkyBase.position.set(0.6, 0.76, 0.06);
+  pinkyBase.rotation.x = -0.25;
+  pinkyBase.castShadow = true;
+  handGroup.add(pinkyBase);
+
+  handGroup.rotation.x = 0;
+  handGroup.position.y = 0;
+
+  var MAX_CURL = { thumb: 1.0, index: 1.5, middle: 1.5, ring: 1.5, pinky: 1.5 };
+
+  function curlFinger(name, t){
+    var f = fingers[name];
+    var max = MAX_CURL[name];
+    f.joints.forEach(function(pivot, i){
+      var per = max * (i === 0 ? 0.85 : 1.0);
+      pivot.rotation.x = per * t;
+    });
+    if (name === 'thumb'){ f.root.rotation.z = 0.95 + 0.5 * t; }
+  }
+
+  var wristSlider = document.getElementById('wrist-slider');
+  var wristOut = document.getElementById('out-wrist');
+  function setWristRotation(deg){ handGroup.rotation.y = (deg - 90) * Math.PI / 180; }
+  wristSlider.addEventListener('input', function(){
+    var v = parseFloat(wristSlider.value);
+    wristOut.textContent = Math.round(motorOf('wrist-slider',v)) + '°';
+    setWristRotation(v);
+    scene.updateMatrixWorld(true);
+    fingerViewStale = true;
+    focusWrist();
+  });
+  setWristRotation(90);
+
+  var shoulderSlider = document.getElementById('shoulder-slider');
+  var shoulderOut = document.getElementById('out-shoulder');
+  shoulderSlider.addEventListener('input', function(){
+    var v = parseFloat(shoulderSlider.value);
+    shoulderOut.textContent = Math.round(motorOf('shoulder-slider',v)) + '°';
+    setShoulderRotation(v);
+    scene.updateMatrixWorld(true);
+    fingerViewStale = true;
+    wristViewStale = true;
+    focusShoulder();
+  });
+  setShoulderRotation(90);
+
+  var abductionSlider = document.getElementById('abduction-slider');
+  var abductionOut = document.getElementById('out-abduction');
+  abductionSlider.addEventListener('input', function(){
+    var v = parseFloat(abductionSlider.value);
+    abductionOut.textContent = Math.round(motorOf('abduction-slider',v)) + '°';
+    setAbductionRotation(v);
+    scene.updateMatrixWorld(true);
+    fingerViewStale = true;
+    wristViewStale = true;
+    focusAbduction();
+  });
+  setAbductionRotation(0);
+
+  var extendSlider = document.getElementById('extend-slider');
+  var extendOut = document.getElementById('out-extend');
+  extendSlider.addEventListener('input', function(){
+    var v = parseFloat(extendSlider.value);
+    extendOut.textContent = Math.round(motorOf('extend-slider',v)) + '°';
+    setExtendJoint(v);
+    scene.updateMatrixWorld(true);
+    fingerViewStale = true;
+    wristViewStale = true;
+    focusShoulder();
+  });
+  setExtendJoint(0);
+
+  updateGyroCube();
+  focusFingers();
+  lastArmFocusFn = focusArm;
+
+  document.getElementById('autofocus-toggle').addEventListener('click', function(){
+    setAutoFocusEnabled(!autoFocusEnabled);
+  });
+
+  var sliderIds = ['thumb','index','middle','ring','pinky'];
+  sliderIds.forEach(function(id){
+    var input = document.getElementById(id);
+    var out = document.getElementById('out-'+id);
+    input.addEventListener('input', function(){
+      var max = parseFloat(input.max);
+      var val = parseFloat(input.value);
+      out.textContent = Math.round(motorOf(id,val)) + '°';
+      curlFinger(id, val/max);
+      focusFingers(true);
+    });
+  });
+
+  var armSlider = document.getElementById('arm-slider');
+  var armOut = document.getElementById('out-arm');
+  armSlider.addEventListener('input', function(){
+    var v = parseFloat(armSlider.value);
+    armOut.textContent = Math.round(motorOf('arm-slider',v)) + '°';
+    forearmPivot.rotation.x = v * Math.PI / 180;
+    fingerViewStale = true;
+    wristViewStale = true;
+    focusArm();
+  });
+
+  function setPose(vals){
+    sliderIds.forEach(function(id){
+      var input = document.getElementById(id);
+      var out = document.getElementById('out-'+id);
+      var v = vals[id];
+      input.value = v;
+      out.textContent = Math.round(motorOf(id,v)) + '°';
+      curlFinger(id, v/parseFloat(input.max));
+    });
+  }
+
+  document.getElementById('preset-open').addEventListener('click', function(){ setPose({ thumb:0, index:0, middle:0, ring:0, pinky:0 }); });
+  document.getElementById('preset-fist').addEventListener('click', function(){ setPose({ thumb:70, index:100, middle:100, ring:100, pinky:100 }); });
+  document.getElementById('preset-point').addEventListener('click', function(){ setPose({ thumb:60, index:0, middle:100, ring:100, pinky:100 }); });
+  document.getElementById('preset-peace').addEventListener('click', function(){ setPose({ thumb:70, index:0, middle:0, ring:100, pinky:100 }); });
+  document.getElementById('preset-thumbsup').addEventListener('click', function(){ setPose({ thumb:0, index:100, middle:100, ring:100, pinky:100 }); });
+
+  var playbackActive = false;
+  function animate(){
+    requestAnimationFrame(animate);
+    updateGyroCube();
+    if (playbackActive || (autoFocusEnabled && autoFocusActive)){
+      focusY += (targetFocusY - focusY) * 0.08;
+      focusDistOffset += (targetFocusDistOffset - focusDistOffset) * 0.08;
+      updateCam();
+    }
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', function(){
+    camera.aspect = host.clientWidth/host.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(host.clientWidth, host.clientHeight);
+  });
+
+  window.__handRigReady = true;
+  setStatus('Ready', false);
+
+  var jointIds = ['thumb','index','middle','ring','pinky','wrist-slider','arm-slider','shoulder-slider','abduction-slider','extend-slider'];
+
+  function currentPose(){
+    var pose = {};
+    jointIds.forEach(function(id){ pose[id] = parseFloat(document.getElementById(id).value); });
+    return pose;
+  }
+
+  function applyPose(pose, opts){
+    opts = opts || {};
+    sliderIds.forEach(function(id){
+      if (pose[id] === undefined) return;
+      var input = document.getElementById(id);
+      var out = document.getElementById('out-'+id);
+      input.value = pose[id];
+      out.textContent = Math.round(motorOf(id,pose[id])) + '°';
+      curlFinger(id, pose[id]/parseFloat(input.max));
+    });
+    if (pose['wrist-slider'] !== undefined){
+      wristSlider.value = pose['wrist-slider'];
+      wristOut.textContent = Math.round(motorOf('wrist-slider',pose['wrist-slider'])) + '°';
+      setWristRotation(pose['wrist-slider']);
+    }
+    if (pose['arm-slider'] !== undefined){
+      armSlider.value = pose['arm-slider'];
+      armOut.textContent = Math.round(motorOf('arm-slider',pose['arm-slider'])) + '°';
+      forearmPivot.rotation.x = pose['arm-slider'] * Math.PI / 180;
+    }
+    if (pose['shoulder-slider'] !== undefined){
+      shoulderSlider.value = pose['shoulder-slider'];
+      shoulderOut.textContent = Math.round(motorOf('shoulder-slider',pose['shoulder-slider'])) + '°';
+      setShoulderRotation(pose['shoulder-slider']);
+    }
+    if (pose['abduction-slider'] !== undefined){
+      abductionSlider.value = pose['abduction-slider'];
+      abductionOut.textContent = Math.round(motorOf('abduction-slider',pose['abduction-slider'])) + '°';
+      setAbductionRotation(pose['abduction-slider']);
+    }
+    if (pose['extend-slider'] !== undefined){
+      extendSlider.value = pose['extend-slider'];
+      extendOut.textContent = Math.round(motorOf('extend-slider',pose['extend-slider'])) + '°';
+      setExtendJoint(pose['extend-slider']);
+    }
+    scene.updateMatrixWorld(true);
+    fingerViewStale = true;
+    if (!opts.silent){ focusFingers(true); }
+  }
+
+  function defaultPose(){
+    var p = {};
+    jointIds.forEach(function(id){
+      p[id] = ({'wrist-slider':90,'shoulder-slider':98,'arm-slider':68,'abduction-slider':26})[id] || 0;
+    });
+    return p;
+  }
+
+  applyPose(defaultPose());
+
+  function movedGroups(pose, baseline){
+    baseline = baseline || defaultPose();
+    function moved(ids){ return ids.some(function(id){ return Math.round(pose[id]) !== Math.round(baseline[id]); }); }
+    var fingersMoved = moved(['thumb','index','middle','ring','pinky']);
+    var wristMoved = moved(['wrist-slider']);
+    var elbowMoved = moved(['arm-slider']);
+    var shoulderMoved = moved(['shoulder-slider','abduction-slider','extend-slider']);
+    var armMoved = wristMoved || elbowMoved || shoulderMoved;
+    var movedCount = [fingersMoved, wristMoved, elbowMoved, shoulderMoved].filter(Boolean).length;
+    return {
+      fingers: fingersMoved, arm: armMoved,
+      wrist: wristMoved, elbow: elbowMoved, shoulder: shoulderMoved,
+      multi: movedCount > 1
+    };
+  }
+
+  var cameraMode = 'moving';
+  function setCameraMode(mode){
+    var next = (mode === 'fixed') ? 'fixed' : 'moving';
+    if (next === 'fixed' && cameraMode !== 'fixed'){ fixedViewStale = true; }
+    cameraMode = next;
+  }
+
+  var FIXED_VIEW_POS = null;
+  var FIXED_VIEW_LOOKAT = null;
+  var fixedViewStale = true;
+  function computeFixedView(sweepBox){
+    scene.updateMatrixWorld(true);
+    var fullBox = sweepBox || new THREE.Box3().setFromObject(armAssembly);
+    var center = new THREE.Vector3();
+    var size = new THREE.Vector3();
+    fullBox.getCenter(center);
+    fullBox.getSize(size);
+    var radius = size.length() * 0.5;
+    var vFov = camera.fov * Math.PI / 180;
+    var aspect = camera.aspect || (host.clientWidth / host.clientHeight);
+    var hFov = 2 * Math.atan(Math.tan(vFov/2) * aspect);
+    var limitingFov = Math.min(vFov, hFov);
+    var dist = Math.max((radius / 0.62) / Math.sin(limitingFov/2), 6);
+    var dir = new THREE.Vector3(0.55, 0.32, -1).normalize();
+    FIXED_VIEW_POS = center.clone().addScaledVector(dir, dist);
+    FIXED_VIEW_LOOKAT = center.clone();
+  }
+  function frameFixedWide(instant, sweepBox){
+    isDragging = false;
+    autoFocusMode = 'hand';
+    lastArmFocusFn = function(){ frameFixedWide(true); };
+    if (fixedViewStale || !FIXED_VIEW_POS){
+      computeFixedView(sweepBox);
+      fixedViewStale = false;
+    }
+    handTargetPos.copy(FIXED_VIEW_POS);
+    handTargetLookAt.copy(FIXED_VIEW_LOOKAT);
+    autoFocusActive = true;
+    if (instant){
+      camPos.copy(handTargetPos);
+      camLookAt.copy(handTargetLookAt);
+      camera.position.copy(camPos);
+      camera.lookAt(camLookAt);
+    }
+  }
+
+  var heroBox = new THREE.Box3();
+  function frameHeroShot(sweepBox){
+    isDragging = false;
+    autoFocusMode = 'hand';
+    lastArmFocusFn = function(){ frameHeroShot(sweepBox); };
+    var box;
+    if (sweepBox){ box = sweepBox; }
+    else {
+      scene.updateMatrixWorld(true);
+      heroBox.setFromObject(armAssembly);
+      box = heroBox;
+    }
+    var center = new THREE.Vector3();
+    var size = new THREE.Vector3();
+    box.getCenter(center);
+    box.getSize(size);
+    var radius = size.length() * 0.5;
+    var vFov = camera.fov * Math.PI / 180;
+    var aspect = camera.aspect || (host.clientWidth / host.clientHeight);
+    var hFov = 2 * Math.atan(Math.tan(vFov/2) * aspect);
+    var limitingFov = Math.min(vFov, hFov);
+    var dist = Math.max((radius / 0.68) / Math.sin(limitingFov/2), 5) * getArmZoomScale();
+    var dir = new THREE.Vector3(0.68, 0.42, -0.85).normalize();
+    handTargetPos.copy(center).addScaledVector(dir, dist);
+    handTargetLookAt.copy(center);
+    handTargetUp.set(0, 1, 0);
+    autoFocusActive = true;
+  }
+
+  var CHAIN_ORDER = ['shoulder','elbow','wrist','fingers'];
+  var PAIR_ANCHOR = {
+    'shoulder,elbow': function(){ return shoulderAnchor; },
+    'elbow,wrist':    function(){ return elbowPivot; },
+    'wrist,fingers':  function(){ return wristGroup; }
+  };
+  function adjacentPairAnchor(groups){
+    var moved = CHAIN_ORDER.filter(function(k){ return groups[k]; });
+    if (moved.length !== 2) return null;
+    var i0 = CHAIN_ORDER.indexOf(moved[0]), i1 = CHAIN_ORDER.indexOf(moved[1]);
+    if (Math.abs(i0 - i1) !== 1) return null;
+    var key = moved[0] + ',' + moved[1];
+    var fn = PAIR_ANCHOR[key];
+    return fn ? fn() : null;
+  }
+
+  var pairBox = new THREE.Box3();
+  function framePairShot(anchorObj, sweepBox){
+    isDragging = false;
+    autoFocusMode = 'hand';
+    lastArmFocusFn = function(){ framePairShot(anchorObj, sweepBox); };
+    var box;
+    if (sweepBox){ box = sweepBox; }
+    else {
+      scene.updateMatrixWorld(true);
+      pairBox.setFromObject(anchorObj);
+      box = pairBox;
+    }
+    var center = new THREE.Vector3();
+    var size = new THREE.Vector3();
+    box.getCenter(center);
+    box.getSize(size);
+    var radius = size.length() * 0.5;
+    var vFov = camera.fov * Math.PI / 180;
+    var aspect = camera.aspect || (host.clientWidth / host.clientHeight);
+    var hFov = 2 * Math.atan(Math.tan(vFov/2) * aspect);
+    var limitingFov = Math.min(vFov, hFov);
+    var dist = Math.max((radius / 0.7) / Math.sin(limitingFov/2), 3) * getArmZoomScale();
+    var dir = new THREE.Vector3(0.68, 0.42, -0.85).normalize();
+    handTargetPos.copy(center).addScaledVector(dir, dist);
+    handTargetLookAt.copy(center);
+    handTargetUp.set(0, 1, 0);
+    autoFocusActive = true;
+  }
+
+  function frameMultiJoint(groups, sweepBox, pairSweepBox){
+    var anchor = adjacentPairAnchor(groups);
+    if (anchor){ framePairShot(anchor, pairSweepBox); }
+    else { frameHeroShot(sweepBox); }
+  }
+
+  var sweepBoxA = new THREE.Box3();
+  var sweepBoxB = new THREE.Box3();
+  var sweepUnion = new THREE.Box3();
+  var pairSweepA = new THREE.Box3();
+  var pairSweepB = new THREE.Box3();
+  var pairSweepUnion = new THREE.Box3();
+  function computeSweepBoxes(fromPose, toPose, pairAnchorObj){
+    var restorePose = currentPose();
+    applyPose(fromPose, { silent: true });
+    scene.updateMatrixWorld(true);
+    sweepBoxA.setFromObject(armAssembly);
+    if (pairAnchorObj) pairSweepA.setFromObject(pairAnchorObj);
+    applyPose(toPose, { silent: true });
+    scene.updateMatrixWorld(true);
+    sweepBoxB.setFromObject(armAssembly);
+    if (pairAnchorObj) pairSweepB.setFromObject(pairAnchorObj);
+    sweepUnion.copy(sweepBoxA).union(sweepBoxB);
+    var pairResult = null;
+    if (pairAnchorObj){
+      pairSweepUnion.copy(pairSweepA).union(pairSweepB);
+      pairResult = pairSweepUnion;
+    }
+    applyPose(restorePose, { silent: true });
+    scene.updateMatrixWorld(true);
+    return { hero: sweepUnion, pair: pairResult };
+  }
+
+  function frameForGroups(groups){
+    return new Promise(function(resolve){
+      if (cameraMode === 'fixed'){
+        frameFixedWide(true);
+        renderer.render(scene, camera);
+        requestAnimationFrame(function(){ resolve(); });
+        return;
+      }
+      if (groups.multi){ frameMultiJoint(groups); }
+      else if (groups.arm){ focusArm(); }
+      else { focusFingers(true); }
+      camPos.copy(handTargetPos);
+      camLookAt.copy(handTargetLookAt);
+      camera.position.copy(camPos);
+      camera.lookAt(camLookAt);
+      renderer.render(scene, camera);
+      requestAnimationFrame(function(){ resolve(); });
+    });
+  }
+
+  function captureImage(opts){
+    opts = opts || {};
+    var hq = opts.highQuality !== false;
+    if (!hq){
+      renderer.render(scene, camera);
+      return renderer.domElement.toDataURL('image/png');
+    }
+    var prevRatio = renderer.getPixelRatio();
+    var targetRatio = Math.max(prevRatio, Math.min(window.devicePixelRatio || 1, 2) * 2, 3);
+    renderer.setPixelRatio(targetRatio);
+    renderer.setSize(host.clientWidth, host.clientHeight, false);
+    camera.aspect = host.clientWidth / host.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.render(scene, camera);
+    var dataUrl = renderer.domElement.toDataURL('image/png', 1.0);
+    renderer.setPixelRatio(prevRatio);
+    renderer.setSize(host.clientWidth, host.clientHeight, false);
+    camera.updateProjectionMatrix();
+    renderer.render(scene, camera);
+    return dataUrl;
+  }
+
+  function easeInOutCubic(t){ return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2; }
+
+  var activeTween = null;
+  function tweenTo(fromPose, toPose, durationMs, groups, onFrame){
+    return new Promise(function(resolve){
+      if (activeTween) activeTween.cancelled = true;
+      var tweenState = { cancelled:false };
+      activeTween = tweenState;
+      playbackActive = true;
+      autoFocusActive = true;
+
+      var restPose = defaultPose();
+      var fromCumulative = movedGroups(fromPose, restPose);
+      var toCumulative = movedGroups(toPose, restPose);
+      var liveGroups = {
+        fingers: fromCumulative.fingers || toCumulative.fingers,
+        wrist: fromCumulative.wrist || toCumulative.wrist,
+        elbow: fromCumulative.elbow || toCumulative.elbow,
+        shoulder: fromCumulative.shoulder || toCumulative.shoulder
+      };
+      liveGroups.arm = liveGroups.wrist || liveGroups.elbow || liveGroups.shoulder;
+      var liveMovedCount = [liveGroups.fingers, liveGroups.wrist, liveGroups.elbow, liveGroups.shoulder].filter(Boolean).length;
+      liveGroups.multi = liveMovedCount > 1;
+
+      if (cameraMode === 'fixed'){
+        var fixedSweep = (fixedViewStale || !FIXED_VIEW_POS) ? computeSweepBoxes(fromPose, toPose, null).hero : null;
+        frameFixedWide(false, fixedSweep);
+      } else if (liveGroups.multi){
+        var pairAnchor = adjacentPairAnchor(liveGroups);
+        var sweep = computeSweepBoxes(fromPose, toPose, pairAnchor);
+        frameMultiJoint(liveGroups, sweep.hero, sweep.pair);
+      } else if (liveGroups.arm){
+        focusArm();
+      } else {
+        fingerViewStale = true;
+        focusFingers(true);
+      }
+
+      var startTime = performance.now();
+      function frame(now){
+        if (tweenState.cancelled) return resolve();
+        var t = Math.min(1, (now - startTime) / durationMs);
+        var eased = easeInOutCubic(t);
+        var mid = {};
+        jointIds.forEach(function(id){
+          var a = fromPose[id], b = toPose[id];
+          mid[id] = a + (b - a) * eased;
+        });
+        applyPose(mid, { silent: true });
+        if (onFrame) onFrame(eased);
+        if (t < 1){ requestAnimationFrame(frame); }
+        else {
+          if (activeTween === tweenState) activeTween = null;
+          if (!activeTween) playbackActive = false;
+          resolve();
+        }
+      }
+      requestAnimationFrame(frame);
+    });
+  }
+
+  window.HandRig = {
+    currentPose: currentPose,
+    applyPose: applyPose,
+    defaultPose: defaultPose,
+    movedGroups: movedGroups,
+    frameForGroups: frameForGroups,
+    captureImage: captureImage,
+    canvasEl: renderer.domElement,
+    tweenTo: tweenTo,
+    setCameraMode: setCameraMode,
+    setArmZoomPercent: setArmZoomPercent,
+    onSliderChange: null
+  };
+
+  jointIds.forEach(function(id){
+    document.getElementById(id).addEventListener('input', function(){
+      if (window.HandRig.onSliderChange) window.HandRig.onSliderChange(id);
+    });
+  });
+})();
+<\/script>
+
+<script>
+(function(){
+  function whenRigReady(cb){
+    if (window.__handRigReady && window.HandRig) return cb();
+    setTimeout(function(){ whenRigReady(cb); }, 50);
+  }
+
+  var toastEl = document.getElementById('toast');
+  var toastTimer;
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 2200);
+  }
+
+  var warnEl = document.getElementById('warn-toast');
+  var warnTimer;
+  function warn(msg){
+    warnEl.textContent = msg;
+    warnEl.classList.remove('show');
+    void warnEl.offsetWidth;
+    warnEl.classList.add('show');
+    clearTimeout(warnTimer);
+    warnTimer = setTimeout(function(){ warnEl.classList.remove('show'); }, 2800);
+  }
+
+  function posesEqual(a, b){
+    return Object.keys(a).every(function(id){ return Math.round(a[id]) === Math.round(b[id]); });
+  }
+
+  whenRigReady(function(){
+    var Rig = window.HandRig;
+
+    var pills = Array.prototype.slice.call(document.querySelectorAll('.save-pos-pill'));
+    function showPillFor(id){
+      pills.forEach(function(p){ p.classList.toggle('show', p.getAttribute('data-for') === id); });
+    }
+    Rig.onSliderChange = function(id){ showPillFor(id); };
+
+    pills.forEach(function(pill){
+      pill.querySelector('.save-pos-btn').addEventListener('click', function(){
+        saveCurrentAsStep();
+        pill.classList.remove('show');
+      });
+    });
+
+    var sequence = [];
+    var baselinePose = Rig.defaultPose();
+    var stepCounter = 0;
+
+    var seqListEl = document.getElementById('sequence-list');
+    var seqEmptyEl = document.getElementById('sequence-empty');
+    var seqCountEl = document.getElementById('sequence-count');
+    var previewSeqListEl = document.getElementById('preview-sequence-list');
+
+    function groupLabelFor(step){
+      return step.groups.fingers && step.groups.arm ? 'Fingers + arm'
+           : step.groups.fingers ? 'Fingers'
+           : step.groups.arm ? 'Arm / shoulder'
+           : 'No change';
+    }
+
+    function renderStepList(container, emptyEl){
+      if (emptyEl) container.querySelectorAll('.seq-step').forEach(function(n){ n.remove(); });
+      else container.innerHTML = '';
+      if (emptyEl) emptyEl.style.display = sequence.length ? 'none' : 'block';
+
+      sequence.forEach(function(step, i){
+        var row = document.createElement('div');
+        row.className = 'seq-step' + (step.isGroup ? ' group' : '');
+        row.setAttribute('draggable', 'true');
+        row.dataset.stepId = step.id;
+
+        row.innerHTML =
+          '<span class="seq-drag" title="Drag to reorder">⠿</span>' +
+          '<div class="seq-thumb"><img src="'+step.image+'" alt="'+step.name+'"></div>' +
+          '<div class="seq-body">' +
+            '<input class="seq-name-input" value="'+step.name+'">' +
+            '<div class="seq-meta">'+groupLabelFor(step)+(step.isGroup?' <span class="seq-title-badge">Group</span>':'')+'</div>' +
+          '</div>' +
+          '<div class="seq-delay"><input type="number" min="0" step="50" value="'+step.delay+'"><span>ms</span></div>' +
+          '<button class="seq-remove" title="Remove step">✕</button>';
+
+        row.querySelector('.seq-name-input').addEventListener('input', function(e){
+          step.name = e.target.value || step.name;
+          syncOtherList(container);
+        });
+        row.querySelector('.seq-delay input').addEventListener('input', function(e){
+          step.delay = Math.max(0, parseInt(e.target.value, 10) || 0);
+          syncOtherList(container);
+        });
+        row.querySelector('.seq-remove').addEventListener('click', function(){
+          sequence = sequence.filter(function(s){ return s.id !== step.id; });
+          renderSequence();
+        });
+
+        row.addEventListener('dragstart', function(){ row.classList.add('dragging'); });
+        row.addEventListener('dragend', function(){
+          row.classList.remove('dragging');
+          renderSequence();
+        });
+        row.addEventListener('dragover', function(e){
+          e.preventDefault();
+          var dragging = container.querySelector('.seq-step.dragging');
+          if (!dragging || dragging === row) return;
+          var rect = row.getBoundingClientRect();
+          var before = (e.clientY - rect.top) < rect.height / 2;
+          container.insertBefore(dragging, before ? row : row.nextSibling);
+        });
+        row.addEventListener('drop', function(){
+          var ids = Array.prototype.slice.call(container.querySelectorAll('.seq-step')).map(function(n){ return n.dataset.stepId; });
+          sequence.sort(function(a,b){ return ids.indexOf(a.id) - ids.indexOf(b.id); });
+        });
+
+        container.appendChild(row);
+      });
+    }
+
+    function syncOtherList(fromContainer){
+      if (fromContainer === seqListEl) renderStepList(previewSeqListEl, null);
+      else renderStepList(seqListEl, seqEmptyEl);
+    }
+
+    function renderSequence(){
+      renderStepList(seqListEl, seqEmptyEl);
+      renderStepList(previewSeqListEl, null);
+      seqCountEl.textContent = sequence.length + (sequence.length === 1 ? ' step' : ' steps');
+    }
+
+    function makeStep(pose, groups, image, isGroup){
+      stepCounter++;
+      return {
+        id: 's' + Date.now() + '_' + stepCounter,
+        name: (isGroup ? 'Group move ' : 'Step ') + stepCounter,
+        pose: pose, groups: groups, image: image, delay: 900, isGroup: !!isGroup
+      };
+    }
+
+    var savingStep = false;
+    function saveCurrentAsStep(){
+      if (savingStep) return;
+      var pose = Rig.currentPose();
+      if (posesEqual(pose, baselinePose)){
+        warn('Unable to save — nothing has changed since the last step. If you want to increase the timing, raise that step\u2019s delay instead.');
+        return;
+      }
+      savingStep = true;
+      var groups = Rig.movedGroups(pose, baselinePose);
+      Rig.frameForGroups(groups).then(function(){
+        var image = Rig.captureImage({ highQuality: true });
+        sequence.push(makeStep(pose, groups, image, false));
+        baselinePose = pose;
+        renderSequence();
+        toast('Position saved as "' + sequence[sequence.length-1].name + '"');
+      }).finally(function(){ savingStep = false; });
+    }
+
+    var savingGroup = false;
+    function saveGroupAsStep(){
+      if (savingGroup) return;
+      var pose = Rig.currentPose();
+      var groups = Rig.movedGroups(pose, baselinePose);
+      if (!groups.fingers && !groups.arm || posesEqual(pose, baselinePose)){
+        warn('Unable to save — nothing has changed since the last step. If you want to increase the timing, raise that step\u2019s delay instead.');
+        return;
+      }
+      savingGroup = true;
+      Rig.frameForGroups(groups).then(function(){
+        var image = Rig.captureImage({ highQuality: true });
+        sequence.push(makeStep(pose, groups, image, true));
+        baselinePose = pose;
+        renderSequence();
+        toast('Group move saved as "' + sequence[sequence.length-1].name + '"');
+      }).finally(function(){ savingGroup = false; });
+    }
+    document.getElementById('save-group-btn').addEventListener('click', saveGroupAsStep);
+
+    renderSequence();
+
+    var playBtn = document.getElementById('play-sequence');
+    var pauseBtn = document.getElementById('pause-sequence');
+    var isPlaying = false;
+    var playToken = 0;
+
+    function runSmoothPlayback(onStep, token){
+      if (!sequence.length){ return Promise.resolve(); }
+      var current = Rig.currentPose();
+      var i = 0;
+      function next(){
+        if (token !== playToken) return Promise.resolve();
+        var step = sequence[i % sequence.length];
+        var duration = Math.max(150, step.delay);
+        return Rig.tweenTo(current, step.pose, duration, step.groups).then(function(){
+          current = step.pose;
+          if (onStep) onStep(step, i);
+          i++;
+          if (token !== playToken) return;
+          return next();
+        });
+      }
+      return next();
+    }
+
+    function startPlayback(){
+      if (!sequence.length){ toast('Save at least one position first'); return; }
+      isPlaying = true;
+      playToken++;
+      var token = playToken;
+      playBtn.disabled = true;
+      pauseBtn.disabled = false;
+      runSmoothPlayback(null, token);
+    }
+    function stopPlayback(){
+      isPlaying = false;
+      playToken++;
+      playBtn.disabled = false;
+      pauseBtn.disabled = true;
+    }
+    playBtn.addEventListener('click', startPlayback);
+    pauseBtn.addEventListener('click', stopPlayback);
+
+    var VIDEO_MODE = true;
+
+    var cameraModeToggle = document.getElementById('camera-mode-toggle');
+    var cameraModeLabel = document.getElementById('camera-mode-label');
+    var cameraModeHint = document.getElementById('camera-mode-hint');
+    var previewCameraModeToggle = document.getElementById('preview-camera-mode-toggle');
+    var previewCameraModeHint = document.getElementById('preview-camera-mode-hint');
+
+    function applyCameraMode(fixed){
+      Rig.setCameraMode(fixed ? 'fixed' : 'moving');
+      cameraModeToggle.checked = fixed;
+      cameraModeLabel.textContent = fixed ? 'Fixed camera (follow off)' : 'Follow camera';
+      cameraModeHint.textContent = fixed
+        ? 'Follow camera is off: one distant, unmoving wide angle is used for every photo and every frame of the motion, always keeping the whole arm — shoulder to fingertips — in frame together, so you see the entire arm move without any cutting or panning.'
+        : 'Follow camera: the shot tracks the palm and tightens on whatever joints just moved, for close-up detail shots. Switch off for one distant, unmoving wide angle that keeps the whole arm — shoulder to fingertips — in frame for every photo and every frame of the motion, so you can watch the entire arm move without the camera cutting or panning.';
+      previewCameraModeToggle.textContent = fixed ? 'Fixed camera: On' : 'Fixed camera: Off';
+      previewCameraModeToggle.classList.toggle('primary', fixed);
+      previewCameraModeHint.textContent = fixed
+        ? 'Fixed camera on: one unmoving wide angle keeps the whole arm in frame for every frame of the motion and every photo.'
+        : 'Fixed camera off: the shot tracks whatever joints just moved. Turn on for one unmoving wide angle that keeps the whole arm in frame for every frame of the motion.';
+    }
+    cameraModeToggle.addEventListener('change', function(){ applyCameraMode(cameraModeToggle.checked); });
+    previewCameraModeToggle.addEventListener('click', function(){ applyCameraMode(!cameraModeToggle.checked); });
+
+    var armZoomSlider = document.getElementById('arm-zoom-slider');
+    var outArmZoom = document.getElementById('out-arm-zoom');
+    armZoomSlider.addEventListener('input', function(){
+      var pct = parseInt(armZoomSlider.value, 10) || 100;
+      outArmZoom.textContent = pct + '%';
+      Rig.setArmZoomPercent(pct);
+    });
+
+    var libOverlay = document.getElementById('lib-overlay');
+    var libList = document.getElementById('lib-list');
+    var loadedGestureName = null;
+
+    function readLibrary(){
+      try{
+        var hub = window.parent && window.parent.__zippyHub;
+        if (hub && typeof hub.loadCustom === 'function'){
+          var hostList = hub.loadCustom();
+          if (Array.isArray(hostList)) return hostList;
+        }
+      }catch(e){}
+      try{
+        var raw = localStorage.getItem('zippyCustomGestures');
+        var list = raw ? JSON.parse(raw) : [];
+        return Array.isArray(list) ? list : [];
+      }catch(e){ return []; }
+    }
+
+    function gestureRuntime(g){
+      return (g.sequence || []).reduce(function(a, s){ return a + Math.max(0, s.delay || 0); }, 0);
+    }
+
+    function gestureParts(g){
+      var base = Rig.defaultPose();
+      var groups = { fingers:false, wrist:false, elbow:false, shoulder:false };
+      (g.sequence || []).forEach(function(st){
+        var p = st.pose || {};
+        ['thumb','index','middle','ring','pinky'].forEach(function(id){
+          if (p[id] != null && Math.round(p[id]) !== Math.round(base[id])) groups.fingers = true;
+        });
+        if (p['wrist-slider'] != null && Math.round(p['wrist-slider']) !== Math.round(base['wrist-slider'])) groups.wrist = true;
+        if (p['arm-slider'] != null && Math.round(p['arm-slider']) !== Math.round(base['arm-slider'])) groups.elbow = true;
+        ['shoulder-slider','abduction-slider','extend-slider'].forEach(function(id){
+          if (p[id] != null && Math.round(p[id]) !== Math.round(base[id])) groups.shoulder = true;
+        });
+      });
+      var names = Object.keys(groups).filter(function(k){ return groups[k]; });
+      return names.length ? names.join(' + ') : 'static pose';
+    }
+
+    function openLibrary(){
+      var list = readLibrary();
+      if (!list.length){
+        libList.innerHTML = '<div class="lib-empty">Nothing in your library yet.<br>Save a gesture first, then it will show up here to load and edit.</div>';
+      } else {
+        libList.innerHTML = list.map(function(g, i){
+          var steps = (g.sequence || []).length;
+          var secs = Math.round(gestureRuntime(g) / 100) / 10;
+          var thumb = g.coverImage
+            ? '<img class="lib-thumb" src="' + g.coverImage + '" alt="">'
+            : '<div class="lib-thumb"></div>';
+          return '<div class="lib-item" data-i="' + i + '">' + thumb +
+            '<div class="lib-meta">' +
+              '<div class="lib-name">' + (g.name || 'Untitled') + '</div>' +
+              '<div class="lib-sub">' + steps + ' step' + (steps === 1 ? '' : 's') +
+                ' \u00B7 ' + secs + 's \u00B7 ' + gestureParts(g) + '</div>' +
+            '</div>' +
+            '<button class="lib-load" type="button">Load</button></div>';
+        }).join('');
+        Array.prototype.forEach.call(libList.querySelectorAll('.lib-item'), function(row){
+          row.addEventListener('click', function(){ loadGestureIntoEditor(list[parseInt(row.dataset.i, 10)]); });
+        });
+      }
+      libOverlay.classList.add('open');
+    }
+    function closeLibrary(){ libOverlay.classList.remove('open'); }
+
+    function loadGestureIntoEditor(g){
+      if (!g) return;
+      var src = (g.sequence || []).filter(function(s){ return s && s.pose; });
+      if (!src.length){ toast('That gesture has no recorded steps'); return; }
+
+      stopPlayback();
+
+      sequence = src.map(function(s, si){
+        stepCounter++;
+        return {
+          id: 's' + Date.now() + '_' + stepCounter,
+          name: s.name || ('Step ' + (si + 1)),
+          pose: JSON.parse(JSON.stringify(s.pose)),
+          groups: s.groups ? JSON.parse(JSON.stringify(s.groups)) : Rig.movedGroups(s.pose, Rig.defaultPose()),
+          image: s.image || '',
+          delay: Math.max(0, s.delay || 0),
+          isGroup: !!s.isGroup
+        };
+      });
+
+      var last = sequence[sequence.length - 1].pose;
+      baselinePose = last;
+      Rig.applyPose(last);
+      loadedGestureName = g.name || null;
+      renderSequence();
+      closeLibrary();
+      toast('Loaded "' + (g.name || 'gesture') + '" \u2014 ' + sequence.length + ' steps. Edit and save as a new gesture.');
+    }
+
+    document.getElementById('upload-gesture-btn').addEventListener('click', openLibrary);
+    document.getElementById('lib-close').addEventListener('click', closeLibrary);
+    libOverlay.addEventListener('click', function(e){ if (e.target === libOverlay) closeLibrary(); });
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && libOverlay.classList.contains('open')) closeLibrary();
+    });
+
+    var overlay = document.getElementById('preview-overlay');
+    var previewImg = document.getElementById('preview-img');
+    var previewVideoCanvas = document.getElementById('preview-video-canvas');
+    var currentAngle = { image: 'auto', video: 'auto' };
+
+    function angleGroupsOverride(angle, naturalGroups){
+      if (angle === 'front') return { fingers: true, arm: false };
+      if (angle === 'side') return { fingers: false, arm: true };
+      if (angle === 'wide') return { fingers: true, arm: true };
+      return naturalGroups;
+    }
+
+    function refreshImagePreview(){
+      if (!sequence.length){
+        previewImg.src = Rig.captureImage({ highQuality: true });
+        return;
+      }
+      var last = sequence[sequence.length - 1];
+      Rig.applyPose(last.pose, { silent: true });
+      var cumulativeGroups = Rig.movedGroups(last.pose, Rig.defaultPose());
+      var groups = angleGroupsOverride(currentAngle.image, cumulativeGroups);
+      Rig.frameForGroups(groups).then(function(){
+        previewImg.src = Rig.captureImage({ highQuality: true });
+      });
+    }
+
+    document.querySelectorAll('#image-angle-row .angle-chip').forEach(function(chip){
+      chip.addEventListener('click', function(){
+        document.querySelectorAll('#image-angle-row .angle-chip').forEach(function(c){ c.classList.remove('active'); });
+        chip.classList.add('active');
+        currentAngle.image = chip.getAttribute('data-angle');
+        refreshImagePreview();
+      });
+    });
+    document.querySelectorAll('#video-angle-row .angle-chip').forEach(function(chip){
+      chip.addEventListener('click', function(){
+        document.querySelectorAll('#video-angle-row .angle-chip').forEach(function(c){ c.classList.remove('active'); });
+        chip.classList.add('active');
+        currentAngle.video = chip.getAttribute('data-angle');
+      });
+    });
+
+    document.getElementById('recapture-btn').addEventListener('click', function(){
+      document.querySelectorAll('#image-angle-row .angle-chip').forEach(function(c){ c.classList.remove('active'); });
+      var autoChip = document.querySelector('#image-angle-row .angle-chip[data-angle="auto"]');
+      if (autoChip) autoChip.classList.add('active');
+      currentAngle.image = 'auto';
+      refreshImagePreview();
+      toast('Recaptured cover image');
+    });
+
+    var previewVideoCtx = previewVideoCanvas.getContext('2d');
+
+    function drawFrameToPreviewCanvas(){
+      var src = Rig.canvasEl;
+      if (!previewVideoCanvas.width || previewVideoCanvas.width !== src.width || previewVideoCanvas.height !== src.height){
+        previewVideoCanvas.width = src.width;
+        previewVideoCanvas.height = src.height;
+      }
+      previewVideoCtx.drawImage(src, 0, 0, previewVideoCanvas.width, previewVideoCanvas.height);
+    }
+
+    var previewPlaying = false;
+    var previewToken = 0;
+    function runSmoothPreview(token){
+      if (!sequence.length) return Promise.resolve();
+      var current = Rig.currentPose();
+      var i = sequence.length > 1 ? 1 : 0;
+      function next(){
+        if (token !== previewToken) return;
+        var step = sequence[i % sequence.length];
+        var groups = angleGroupsOverride(currentAngle.video, step.groups);
+        var duration = Math.max(150, step.delay);
+        return Rig.tweenTo(current, step.pose, duration, groups, function(){
+          drawFrameToPreviewCanvas();
+        }).then(function(){
+          current = step.pose;
+          i++;
+          if (token !== previewToken) return;
+          return next();
+        });
+      }
+      return next();
+    }
+    function previewPlay(){
+      if (!sequence.length){ toast('No steps recorded yet'); return; }
+      previewPlaying = true;
+      previewToken++;
+      var token = previewToken;
+      document.getElementById('preview-play').disabled = true;
+      document.getElementById('preview-pause').disabled = false;
+      runSmoothPreview(token);
+    }
+    function previewStop(){
+      previewPlaying = false;
+      previewToken++;
+      document.getElementById('preview-play').disabled = false;
+      document.getElementById('preview-pause').disabled = true;
+    }
+    document.getElementById('preview-play').addEventListener('click', previewPlay);
+    document.getElementById('preview-pause').addEventListener('click', previewStop);
+
+    function openPreview(){
+      if (!sequence.length){ toast('Save at least one position before previewing'); return; }
+      stopPlayback();
+      gestureSaved = false;
+      saveGestureBtn.disabled = false;
+      savePublishBtn.disabled = false;
+      overlay.classList.add('open');
+      renderStepList(previewSeqListEl, null);
+      refreshImagePreview();
+      Rig.applyPose(sequence[0].pose, { silent: true });
+      Rig.frameForGroups(sequence[0].groups).then(function(){ drawFrameToPreviewCanvas(); });
+    }
+    function closePreview(){
+      previewStop();
+      overlay.classList.remove('open');
+    }
+    document.getElementById('preview-cancel').addEventListener('click', closePreview);
+
+    function buildGestureRecord(published){
+      var suggested = loadedGestureName
+        ? loadedGestureName + ' (edited)'
+        : 'Custom gesture ' + (Date.now() % 10000);
+      var name = window.prompt('Name this gesture. This is what you will say to Zippy.\nSeparate several names with commas (e.g. spiderman, cool, yo):', suggested);
+      if (!name) return null;
+      return {
+        id: 'g_' + Date.now(),
+        name: name,
+        videoMode: VIDEO_MODE,
+        coverImage: previewImg.src || (sequence[0] && sequence[0].image),
+        sequence: sequence.map(function(s){
+          return { name: s.name, pose: s.pose, groups: s.groups, image: s.image, delay: s.delay, isGroup: !!s.isGroup };
+        }),
+        published: !!published,
+        createdAt: Date.now()
+      };
+    }
+
+    function persistGesture(record){
+      try{
+        record.publisherEmail = (window.__zippyAccount && window.__zippyAccount.email) || null;
+        record.publisherName  = (window.__zippyAccount && window.__zippyAccount.name) || 'You';
+        window.parent.postMessage({ type: 'zippy:save', record: record }, '*');
+        return true;
+      }catch(e){
+        console.error(e);
+        return false;
+      }
+    }
+
+    var gestureSaved = false;
+    var saveGestureBtn = document.getElementById('preview-save-gesture');
+    var savePublishBtn = document.getElementById('preview-save-publish');
+    function saveGesture(published){
+      if (gestureSaved) return;
+      var record = buildGestureRecord(published);
+      if (!record) return;
+      gestureSaved = true;
+      saveGestureBtn.disabled = true;
+      savePublishBtn.disabled = true;
+      if (persistGesture(record)){
+        toast(published ? 'Gesture saved and published to the library' : 'Gesture saved');
+        setTimeout(function(){ window.parent.postMessage({ type: 'zippy:done' }, '*'); }, 900);
+      } else {
+        toast('Could not save gesture on this device');
+        gestureSaved = false;
+        saveGestureBtn.disabled = false;
+        savePublishBtn.disabled = false;
+      }
+    }
+
+    document.getElementById('save-gesture-top').addEventListener('click', openPreview);
+    saveGestureBtn.addEventListener('click', function(){ saveGesture(false); });
+    savePublishBtn.addEventListener('click', function(){ saveGesture(true); });
+  });
+})();
+<\/script>
+<script>
+window.addEventListener('message', function(e){
+  if (e.data && e.data.type === 'zippy:account') window.__zippyAccount = e.data.account;
+});
+document.getElementById('gesture-library-btn').addEventListener('click', function(){
+  window.parent.postMessage({ type: 'zippy:close' }, '*');
+});
+<\/script>
+</body>
+</html>
+</script>
+
+<script>
+(function(){
+'use strict';
+/* =====================================================================
+   ZIPPY VOICE GESTURES
+   Motor mapping copied 1:1 from the remote-control page.
+   ===================================================================== */
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* Joint mapping copied EXACTLY from the working remote-control page.
+   forearm 'arm' (D5) | shoulder turn 'shoulder' (D19)
+   sideways-lift slider -> 'extend' field (D21) | reach slider -> 'abduction' field (D18) */
+const FIELD={thumb:'thumb',index:'index',middle:'middle',ring:'ring',pinky:'pinky',
+  'wrist-slider':'wrist','arm-slider':'arm','shoulder-slider':'shoulder',
+  'abduction-slider':'extend',
+  'extend-slider':'abduction'};
+/* slider 0 sends 360, slider max sends 0 for these three (mounted the other way round) */
+const INVERT={'arm-slider':true,'extend-slider':true,'abduction-slider':true};
+const live={thumb:0,index:0,middle:0,ring:0,pinky:0,'wrist-slider':90,'arm-slider':68,'shoulder-slider':98,'abduction-slider':26,'extend-slider':0};
+const CAL={
+  thumb:{ui:[0,90],servo:[0,180]},index:{ui:[0,100],servo:[0,180]},middle:{ui:[0,100],servo:[0,180]},
+  ring:{ui:[0,100],servo:[0,180]},pinky:{ui:[0,100],servo:[0,180]},
+  'wrist-slider':{ui:[0,180],servo:[0,130],neutral:{ui:90,servo:70}},
+  'arm-slider':{ui:[68,110],servo:[0,360]},'shoulder-slider':{ui:[98,65],servo:[0,360]},
+  'abduction-slider':{ui:[26,70],servo:[0,360]},'extend-slider':{ui:[0,14],servo:[0,360]}
+};
+function calMotor(id,x){
+  const c=CAL[id],u0=c.ui[0],u1=c.ui[1],s0=c.servo[0],s1=c.servo[1];
+  x=Math.max(Math.min(u0,u1),Math.min(Math.max(u0,u1),x));
+  if(c.neutral){const nu=c.neutral.ui,ns=c.neutral.servo;
+    return Math.round(x<=nu?(nu-u0?ns+(s0-ns)*((nu-x)/(nu-u0)):ns):(u1-nu?ns+(s1-ns)*((x-nu)/(u1-nu)):ns))}
+  return Math.round(s0+(s1-s0)*((x-u0)/(u1-u0)));
+}
+const toMotor=(id,x)=>{const v=calMotor(id,x);return INVERT[id]?360-v:v};
+
+const REST={thumb:0,index:0,middle:0,ring:0,pinky:0,'wrist-slider':90,'arm-slider':68,'shoulder-slider':98,'abduction-slider':26,'extend-slider':0};
+const MAXF={thumb:90,index:100,middle:100,ring:100,pinky:100};
+const KEYS={T:'thumb',I:'index',M:'middle',R:'ring',P:'pinky',W:'wrist-slider',E:'arm-slider',S:'shoulder-slider',L:'abduction-slider',X:'extend-slider'};
+const WS=.3; /* wrist uses only 30% of its travel - protects the threads */
+const c01=x=>Math.max(0,Math.min(1,x));
+function F(id,f){f=c01(f);if(MAXF[id])return Math.round(MAXF[id]*f);if(id==='wrist-slider')return Math.round(180*(.5+(f-.5)*WS));
+  const u=CAL[id].ui;return Math.round(u[0]+(u[1]-u[0])*f)}
+function part(spec){const o={};for(const k in spec)o[KEYS[k]]=F(KEYS[k],spec[k]);return o}
+const full=spec=>Object.assign({},REST,part(spec));
+const H=(t,i,m,r,p,x)=>full(Object.assign({T:t,I:i,M:m,R:r,P:p},x||{}));
+const J=spec=>part(spec);
+const st=(pose,d)=>({pose,d:d||0});
+function osc(base,key,a,b,n,d){const o=[];for(let k=0;k<n;k++){
+  o.push(st(full(Object.assign({},base,{[key]:a})),d));o.push(st(full(Object.assign({},base,{[key]:b})),d))}return o}
+const OPEN={T:0,I:0,M:0,R:0,P:0}, FISTS={T:1,I:1,M:1,R:1,P:1};
+
+const CMDS=[];
+function add(cat,names,steps,o){CMDS.push(Object.assign({cat,names,steps:Array.isArray(steps)?steps:[st(steps)]},o||{}))}
+
+const CNT=[[1,0,1,1,1],[1,0,0,1,1],[1,0,0,0,1],[1,0,0,0,0],[0,0,0,0,0],[1,.5,1,1,1],[1,.5,.5,1,1],[1,.5,.5,.5,1],[1,.5,.5,.5,.5],[.5,.5,.5,.5,.5]];
+const CNN=[['one','1','number one','won'],['two','2','number two','too','to','tu'],['three','3','number three','tree'],['four','4','number four','for'],
+  ['five','5','number five'],['six','6','number six'],['seven','7','number seven'],['eight','8','number eight','ate'],['nine','9','number nine'],['ten','10','number ten']];
+const SEQ=(base,arr,d)=>arr.map(x=>st(full(Object.assign({},base,x)),d));
+const SHOW={E:.7,L:.45};   /* counting: arm lifted up and out so the number is clearly shown */
+CNT.forEach((p,i)=>add('Counting',CNN[i],H(...p,SHOW)));
+
+/* BOLD choreography: forearm (E), sideways lift D21 (L), bicep turn (S), reach (X) all swing wide. Wrist stays tiny. */
+add('Hand signs',['fist','close hand','grab','grip','clench','punch','rock','make fist'],J({T:1,I:1,M:1,R:1,P:1}));
+add('Hand signs',['open hand','open','open palm','release','let go','spread','paper','flat hand','palm','hand open'],J({T:0,I:0,M:0,R:0,P:0}));
+add('Hand signs',['thumbs up','thumb up','like','good job','great','awesome','well done','approve','good','nice job'],
+  SEQ({T:0,I:1,M:1,R:1,P:1},[{E:.3,L:.2},{E:.95,L:.7,S:.15},{E:.8,L:.85,S:.15},{E:.95,L:.7,S:.15}],550));
+add('Hand signs',['thumbs down','thumb down','dislike','bad','boo','disapprove','no way'],
+  SEQ({T:0,I:1,M:1,R:1,P:1},[{E:.6,L:.4},{E:.3,L:.6,S:.9},{E:.1,L:.5,S:1}],550));
+add('Hand signs',['peace','peace sign','victory','v sign','scissors','two fingers','bunny ears'],
+  SEQ({T:1,I:0,M:0,R:1,P:1},[{E:.4,L:.3},{E:.95,L:.75,S:.1},{E:.85,L:.9,S:.35},{E:.95,L:.75,S:.1}],500));
+add('Hand signs',['ok sign','ok','okay','a ok','perfect','all good','fine','excellent','delicious'],
+  SEQ({T:.55,I:.6,M:0,R:0,P:0},[{E:.4,L:.3},{E:.95,L:.7,S:.1},{E:.8,L:.85,S:.3},{E:.95,L:.7,S:.1}],500));
+add('Hand signs',['spiderman','spider man','spidey','shoot web','web shooter','cool','yo','sup','whats up','rock on','rock and roll','metal','horns','devil horns'],
+  SEQ({T:1,I:0,M:1,R:1,P:0,E:.7,L:.85},[{E:.4,L:.3,X:0},{},{X:1},{X:.1},{X:1},{X:.1}],430));
+add('Hand signs',['i love you','love you','love','ily','i love u','ily sign'],
+  SEQ({T:0,I:0,M:1,R:1,P:0,E:.9,L:.7},[{E:.3,L:.2},{},{S:.45},{S:0},{S:.45},{S:0}],430));
+add('Hand signs',['call me','phone','shaka','hang loose','surfs up','aloha','call'],
+  SEQ({T:0,I:1,M:1,R:1,P:0},[{E:.4,L:.3},{E:1,L:.5,S:.35},{E:1,L:.5,S:.1},{E:1,L:.5,S:.35},{E:1,L:.5,S:.1}],450));
+add('Hand signs',['finger gun','gun','pistol','bang','pew pew','letter l'],
+  SEQ({T:0,I:0,M:1,R:1,P:1,L:.6},[{E:.3,L:.2,X:0},{E:.6,X:1},{E:.9,X:.8},{E:.6,X:1},{E:.9,X:.8},{E:.6,X:1}],300));
+add('Hand signs',['pinch','pinch grip','tweezers','precision grip','pick small'],J({T:.6,I:.65,M:1,R:1,P:1}));
+add('Hand signs',['claw','bear claw','tiger','scary','spooky'],
+  [[.3,.9,.3,1],[.85,.2,.85,.4],[.3,.9,.3,1],[.85,.2,.85,.4]].map((a,i)=>st(full({T:a[0],I:a[0],M:a[0],R:a[0],P:a[0],E:a[1]+.3,L:a[1]+.3,S:a[3]*.6}),420)));
+add('Hand signs',['cup','hold ball','round grip','ball grip','hold something'],J({T:.35,I:.35,M:.35,R:.35,P:.35}));
+add('Hand signs',['point','pointing','pointer','that one','you','over there'],
+  SEQ({T:1,I:0,M:1,R:1,P:1},[{E:.2,L:.4},{E:.3,L:.9,X:1},{E:.3,L:.9,X:1}],550));
+add('Hand signs',['relax hand','relax fingers','natural hand','soft hand','calm hand'],J({T:.25,I:.25,M:.25,R:.25,P:.25}));
+add('Hand signs',['pinky up','pinky promise','letter i','little finger up'],
+  SEQ({T:1,I:1,M:1,R:1,P:0},[{E:.3,L:.2},{E:.95,L:.7,S:.2},{E:.85,L:.8,S:.2}],500));
+add('Hand signs',['good luck','fingers crossed','cross fingers'],
+  SEQ({T:1,I:.1,M:.35,R:1,P:1},[{E:.3,L:.2},{E:.95,L:.7,S:.2},{E:.8,L:.8,S:.35},{E:.95,L:.7,S:.2}],500));
+add('Hand signs',['wait','hold on','one moment','just a second'],
+  SEQ({T:1,I:0,M:1,R:1,P:1,E:.85,L:.7},[{E:.4,L:.3},{},{S:.35},{S:0},{S:.35},{S:0}],380));
+add('Hand signs',['salute','hail','salute me'],
+  SEQ({T:0,I:0,M:0,R:0,P:0},[{E:.5,L:.5},{E:1,L:.85},{E:1,L:.85},{E:0,L:0}],700));
+add('Hand signs',['stop sign','palm out','talk to the hand'],
+  SEQ({T:0,I:0,M:0,R:0,P:0},[{E:.4,L:.3},{E:.8,L:.7,X:1},{E:.8,L:.7,X:1}],500));
+add('Hand signs',['high five','give me five','slap five','five up'],
+  SEQ({T:0,I:0,M:0,R:0,P:0},[{E:.3,L:.4},{E:.9,L:1,X:1},{E:.3,L:.4,X:0}],400));
+add('Hand signs',['handshake','shake hands','shake hand','nice to meet you'],[],{label:'Handshake',fn:ctx=>{
+  const cur=ctx&&ctx.hold&&ctx.cur&&ctx.cur['arm-slider']!=null?ctx.cur:null;
+  const clampE=x=>Math.max(68,Math.min(110,x));
+  if(cur){
+    const e=cur['arm-slider'],fin=part({T:.15,I:.15,M:.15,R:.15,P:.15});
+    const mk=x=>Object.assign({},fin,{'arm-slider':clampE(x)});
+    return{steps:[st(mk(e),500)].concat([e+10,e-10,e+10,e-10,e].map(x=>st(mk(x),260))),label:'Handshake (same position)'};
+  }
+  const base=H(.15,.15,.15,.15,.15,{E:.5,X:1,L:.35}),e=base['arm-slider'];
+  const mk=x=>Object.assign({},base,{'arm-slider':clampE(x)});
+  return{steps:[st(base,700)].concat([e+10,e-10,e+10,e-10,e].map(x=>st(mk(x),260))),label:'Handshake'};
+}});
+add('Hand signs',['namaste','pray','thank you','thanks','folded hands'],
+  SEQ({T:0,I:0,M:0,R:0,P:0},[{E:.6,L:.3},{E:1,L:.4},{E:.85,L:.3},{E:1,L:.4}],550));
+add('Hand signs',['thinking','hmm','let me think','think'],
+  SEQ({T:1,I:0,M:1,R:1,P:1},[{E:.5,L:.4},{E:1,L:.55,S:.35},{E:1,L:.55,S:.35}],600));
+add('Hand signs',['shush','quiet','silence','be quiet'],
+  SEQ({T:1,I:0,M:1,R:1,P:1},[{E:.5,L:.3},{E:1,L:.45,S:.2},{E:1,L:.45,S:.2}],550));
+add('Hand signs',['palm up','show palm','offer','offer hand','hand out'],
+  SEQ({T:.1,I:.1,M:.1,R:.1,P:.1},[{E:.4,L:.3},{E:.5,L:.5,X:.9,S:1},{E:.5,L:.5,X:.9,S:1}],550));
+add('Hand signs',['palm down','hand down','flat down'],H(0,0,0,0,0,{E:.4,X:.7,L:.3,S:0}));
+
+const FN={T:['thumb'],I:['index','pointer','index finger','pointer finger'],M:['middle','middle finger'],R:['ring','ring finger'],P:['pinky','pinkie','little finger','pinky finger','pinkie finger']};
+Object.keys(FN).forEach(k=>{
+  const cur=[],opn=[];
+  FN[k].forEach(n=>{['bend','curl','close','fold','tuck'].forEach(v=>cur.push(v+' '+n));['open','straighten','extend','unbend','release'].forEach(v=>opn.push(v+' '+n))});
+  add('Single finger',cur,J({[k]:1}));
+  add('Single finger',opn,J({[k]:0}));
+});
+add('Single finger',['close fingers','curl fingers','fold fingers','bend fingers','fingers down'],J({I:1,M:1,R:1,P:1}));
+add('Single finger',['open fingers','straighten fingers','fingers up','extend fingers','spread fingers'],J({I:0,M:0,R:0,P:0}));
+
+const one=k=>{const o={T:0,I:0,M:0,R:0,P:0,E:.45,L:.3,X:.7};o[k]=.9;return full(o)};
+const SW=[[.8,0,.8,0,.8],[0,.8,0,.8,0],[.8,0,.8,0,.8],[0,.8,0,.8,0]];
+/* Wrist barely used: all the swing comes from forearm E, sideways lift L (D21), bicep turn S and reach X. */
+add('Motions',['wave','hello','hi','bye','goodbye','see you','wave hello','wave bye','say hi','say hello','waving'],
+  SEQ({T:0,I:0,M:0,R:0,P:0,E:.95,L:.9},[{E:.5,L:.4},{},{S:.85,W:.4},{S:.1,W:.6},{S:.85,W:.4},{S:.1,W:.6},{S:.85,W:.4},{S:.4,W:.5}],380).concat([st(H(0,0,0,0,0),0)]));
+add('Motions',['come here','beckon','come','come on','call over','follow me'],
+  SEQ({T:1,I:0,M:0,R:0,P:0,E:.6,L:.4,S:1},[{X:1},{I:1,M:1,R:1,P:1,X:.5},{X:1},{I:1,M:1,R:1,P:1,X:.5},{X:1},{I:1,M:1,R:1,P:1,X:.2}],380).concat([st(H(0,0,0,0,0),0)]));
+add('Motions',['wiggle','wiggle fingers','finger wiggle','finger dance','ocean wave'],
+  SW.map((p,i)=>st(H(...p,{E:.7,L:.5,X:i%2?.9:.4,S:i%2?.7:.2}),320)).concat([st(H(0,0,0,0,0),0)]));
+add('Motions',['drum fingers','drum','tap table','finger roll','roll fingers'],['I','M','R','P','R','M','I'].map(k=>st(one(k),230)).concat([st(H(0,0,0,0,0))]));
+add('Motions',['play piano','piano','piano fingers'],
+  [[0,0,0,0,.9],[0,0,0,.9,0],[0,0,.9,0,0],[0,.9,0,0,0],[.9,0,0,0,0],[0,.9,0,0,0],[0,0,.9,0,0],[0,0,0,.9,0],[0,0,0,0,.9],[0,0,0,0,0]].map((p,i)=>st(H(...p,{E:.45,L:.3,X:.7,S:i/9}),260)));
+add('Motions',['open and close','grab and release','pump','flex hand','squeeze','open close'],
+  [1,0,1,0,1,0].map(v=>st(H(v,v,v,v,v,{E:.7,L:.5,X:v?.4:1}),520)));
+add('Motions',['count to three','count three'],[1,2,3].map(n=>st(H(...CNT[n-1],SHOW),700)));
+add('Motions',['count to five','count up','counting','count','count five'],[1,2,3,4,5].map(n=>st(H(...CNT[n-1],SHOW),700)));
+add('Motions',['count to ten','count ten','count up to ten'],[1,2,3,4,5,6,7,8,9,10].map(n=>st(H(...CNT[n-1],SHOW),650)));
+add('Motions',['countdown','count down','count backwards','blast off'],[5,4,3,2,1].map(n=>st(H(...CNT[n-1],SHOW),800)).concat([st(H(1,1,1,1,1,{E:1,L:1}),0)]));
+add('Motions',['knock','knock knock','knock on door'],osc({T:1,I:1,M:1,R:1,P:1,L:.5,X:1},'E',.3,.75,3,260).concat([st(H(1,1,1,1,1,{E:.3,L:.5,X:1}))]));
+add('Motions',['flex','show muscle','bicep','strong','power'],
+  [st(H(1,1,1,1,1,{E:.2,L:.3}),700),st(H(1,1,1,1,1,{E:1,L:.9,S:.5}),1500),st(H(1,1,1,1,1,{E:1,L:1,S:.5,X:.3}),700),st(H(1,1,1,1,1,{E:1,L:.9,S:.5}),600),st(H(0,0,0,0,0),0)]);
+add('Motions',['wag finger','shake no','nope','no','negative','nah'],
+  SEQ({T:1,I:0,M:1,R:1,P:1,E:.9,L:.7,X:.4},[{E:.5,L:.3},{S:.05},{S:.8},{S:.05},{S:.8},{S:.05},{S:.8},{S:.4}],280));
+add('Motions',['nod','yes','nod yes','agree','yeah','sure'],osc({T:0,I:1,M:1,R:1,P:1,L:.5,X:.5},'E',.4,.95,3,330).concat([st(H(0,1,1,1,1,{E:.7,L:.5}))]));
+add('Motions',['cut','snip','cut scissors','scissor cut','snip snip'],[0,.7,0,.7,0,.7,0,.7].map((v,i)=>st(H(1,v,v,1,1,{E:.7,L:.5,X:i%2?.5:1}),210)).concat([st(H(1,0,0,1,1,{E:.7,L:.5,X:1}))]));
+add('Motions',['rock paper scissors','play rock paper scissors','rps','lets play'],[],{fn:()=>{
+  const p=[['rock',H(1,1,1,1,1,{E:.7,L:.4,X:.6})],['paper',H(0,0,0,0,0,{E:.7,L:.4,X:.6})],['scissors',H(1,0,0,1,1,{E:.7,L:.4,X:.6})]][Math.floor(Math.random()*3)];
+  return{steps:osc({T:1,I:1,M:1,R:1,P:1,L:.4,X:.6},'E',.2,.95,3,340).concat([st(p[1])]),label:'Rock paper scissors \u2192 '+p[0]}}});
+add('Motions',['dance','party','boogie','groove'],
+  [H(1,0,1,1,0,{S:.1,E:.5,L:.6}),H(0,0,0,0,0,{S:.9,E:1,L:.2}),H(1,0,0,1,1,{S:.1,E:.7,L:1}),H(0,1,1,1,0,{S:.9,E:1,L:.3,X:.6}),H(1,0,1,1,0,{S:.1,E:.6,L:.9,X:1}),H(0,0,0,0,0,{S:.9,E:.9,L:.5}),H(0,0,0,0,0)].map(p=>st(p,480)));
+add('Motions',['celebrate','celebration','hooray','yay','victory dance','congratulations'],
+  [H(1,0,0,1,1,{E:.8,L:.6}),H(1,0,1,1,0,{E:1,L:1,S:.1}),H(0,1,1,1,1,{E:1,L:1,S:.9}),H(0,0,0,0,0,{E:1,L:1,S:.1}),H(0,0,0,0,0,{E:1,L:1,S:.9}),H(0,0,0,0,0,{E:1,L:1,S:.1,X:.7}),H(0,0,0,0,0,{E:.6,L:.5}),H(0,0,0,0,0)].map(p=>st(p,520)));
+add('Motions',['warm up','exercise','stretch','workout'],
+  [H(1,1,1,1,1,{E:.4,L:.3}),H(0,0,0,0,0,{E:.8,X:1}),H(1,1,1,1,1,{E:1,L:.8}),H(0,0,0,0,0,{L:1,S:.1,X:.5}),H(0,0,0,0,0,{L:1,S:.9,X:.5}),H(0,0,0,0,0,{E:.8,X:1,L:.4}),H(0,0,0,0,0)].map(p=>st(p,650)));
+add('Motions',['spin wrist','rotate wrist','twist wrist','wrist spin','wrist circle'],[.35,.65,.35,.65,.5].map(v=>st(J({W:v}),620)));
+add('Motions',['robot','robot mode','be a robot','robot dance'],
+  [{E:.3},{E:.3,L:.7},{S:.7,L:.7},{S:.7,L:.1,E:.9},{X:1,E:.9},{X:.2,E:.3,S:.2,L:.5},{S:0,E:0,X:0,L:0}].map(s=>st(full(Object.assign({T:.5,I:.5,M:.5,R:.5,P:.5},s)),700)));
+add('Motions',['pick up','pick up object','grab object','pickup'],
+  [H(0,0,0,0,0,{E:.2,X:.3}),H(0,0,0,0,0,{E:.15,X:1,L:.2}),H(.95,.95,.95,.95,.95,{E:.15,X:1,L:.2}),H(.95,.95,.95,.95,.95,{E:.95,X:.3,L:.6,S:.3})].map(p=>st(p,850)));
+add('Motions',['cheers','toast','pour','drink'],
+  [H(.8,.8,.8,.8,.8,{E:.4,X:.4}),H(.8,.8,.8,.8,.8,{E:.95,L:.6,X:.7}),H(.8,.8,.8,.8,.8,{E:.95,L:.6,X:.7,S:.9}),H(.8,.8,.8,.8,.8,{E:.95,L:.6,X:.7,S:.2}),H(.8,.8,.8,.8,.8,{E:.7,L:.4}),H(0,0,0,0,0)].map(p=>st(p,720)));
+add('Motions',['angry','shake fist','mad','furious'],
+  SEQ({T:1,I:1,M:1,R:1,P:1,L:.8},[{E:.5,S:.1},{E:1,S:.7},{E:.5,S:.1},{E:1,S:.7},{E:.5,S:.1},{E:1,S:.7}],200).concat([st(H(1,1,1,1,1))]));
+add('Motions',['shrug','i dont know','dunno','who knows','not sure'],
+  SEQ({T:.1,I:.1,M:.1,R:.1,P:.1,E:.55,X:.7,S:1},[{},{L:.9},{L:0},{L:.9},{L:0}],450));
+add('Motions',['fist pump','yes yes','success','nailed it'],
+  SEQ({T:1,I:1,M:1,R:1,P:1,L:.6},[{E:.3},{E:1,L:.9},{E:.3},{E:1,L:.9},{E:.3,L:.2}],380));
+add('Motions',['ta da','tada','present','introducing','showtime'],
+  SEQ({T:0,I:0,M:0,R:0,P:0},[{E:.4,L:.2,X:.6,S:1},{E:.8,L:.9,X:.8,S:1},{E:.8,L:1,X:.8,S:.4},{E:.3,L:0,X:0,S:0}],600));
+
+/* ---- Arm: slider-space joints. L=sideways lift (D21) E=forearm (D5) S=bicep/shoulder turn (D19) X=reach/extend (D18) ---- */
+add('Arm',['raise arm','lift arm','arm up','raise hand','lift up','raise','lift shoulder','raise shoulder','lift shoulder sideways','lift bicep sideways','lift bicep','raise bicep'],J({L:1}));
+add('Arm',['raise half','half raise','lift half','arm halfway'],J({L:.5}));
+add('Arm',['lower arm','arm down','put arm down','lower hand','lower','lower shoulder','lower bicep','lower shoulder sideways','lower bicep sideways'],J({L:0}));
+add('Arm',['lift forearm','raise forearm','forearm up'],J({E:1}));
+add('Arm',['lower forearm','forearm down','drop forearm'],J({E:0}));
+add('Arm',['reach me','reach','reach forward','reach out','arm forward','arm front','extend shoulder forward','extend forward','shoulder forward','stretch out','extend arm'],J({X:1}));
+add('Arm',['retract','retract joint','pull back','arm back','arm behind','extend zero','extend reset','retract arm','pull in'],J({X:0}));
+add('Arm',['arm side','t pose','arm out','arm sideways','arms out'],J({L:1,S:0,E:0}));
+add('Arm',['turn shoulder','turn bicep','rotate bicep','twist shoulder','turn upper arm'],J({S:1}));
+add('Arm',['turn shoulder back','turn bicep back','unturn shoulder','untwist shoulder','shoulder normal'],J({S:0}));
+add('Arm',['bend elbow','bend arm','fold arm','elbow in','elbow bend'],J({E:.6}));
+add('Arm',['elbow half','half bend','elbow halfway'],J({E:.5}));
+add('Arm',['elbow full','fully bend elbow','elbow max','full bend'],J({E:1}));
+add('Arm',['straighten elbow','straighten arm','elbow straight','arm straight','elbow zero'],J({E:0}));
+add('Arm',['shoulder left','shoulder rotate left','rotate shoulder left','turn left'],J({S:.2}));
+add('Arm',['shoulder right','shoulder rotate right','rotate shoulder right','turn right'],J({S:.8}));
+add('Arm',['shoulder center','shoulder middle','center shoulder'],J({S:.5}));
+add('Arm',['shoulder reset','shoulder zero','shoulder start'],J({S:0}));
+add('Arm',['shoulder full','shoulder max'],J({S:1}));
+add('Arm',['extend joint','extend half','extend joint half'],J({X:.5}));
+add('Arm',['extend full','extend max','extend joint full'],J({X:1}));
+add('Arm',['wrist left','turn wrist left','rotate wrist left','wrist anticlockwise'],J({W:.2}));
+add('Arm',['wrist right','turn wrist right','rotate wrist right','wrist clockwise'],J({W:.8}));
+add('Arm',['wrist center','wrist flat','wrist straight','center wrist','level wrist'],J({W:.5}));
+add('Arm',['wrist full left','wrist max left','wrist left full'],J({W:0}));
+add('Arm',['wrist full right','wrist max right','wrist right full'],J({W:1}));
+add('Arm',['point left','pointing left','point to the left'],H(1,0,1,1,1,{S:.2,L:.9,E:.2,X:1}));
+add('Arm',['point right','pointing right','point to the right'],H(1,0,1,1,1,{S:.8,L:.9,E:.2,X:1}));
+add('Arm',['point up','pointing up','point to the sky','point sky'],H(1,0,1,1,1,{L:1,E:.4}));
+add('Arm',['point down','pointing down','point to the floor','point floor'],H(1,0,1,1,1,{L:0,E:0,X:.8}));
+
+add('Control',['rest','reset','home','go home','default','neutral','relax','rest position','zero','initial position','start position','normal'],REST,{label:'Rest position'});
+add('Control',['stop','halt','freeze','cancel','abort','enough','stay'],[],{fn:()=>{token++;return{none:true,label:'Stopped'}}});
+add('Control',['repeat','again','do it again','one more time','once more','repeat that'],[],{fn:()=>lastRun?{steps:lastRun.steps,label:'Repeat \u2013 '+lastRun.label}:{err:'Nothing to repeat yet'}});
+add('Control',['faster','speed up','quicker','go faster'],[],{fn:()=>{speedMul=Math.max(.3,+(speedMul*.7).toFixed(2));return{none:true,label:'Speed \u00d7'+speedMul}}});
+add('Control',['slower','slow down','go slower'],[],{fn:()=>{speedMul=Math.min(3,+(speedMul/.7).toFixed(2));return{none:true,label:'Speed \u00d7'+speedMul}}});
+add('Control',['normal speed','default speed','regular speed'],[],{fn:()=>{speedMul=1;return{none:true,label:'Speed \u00d71'}}});
+add('Control',['help','list commands','what can you do','show commands','commands'],[],{fn:()=>{showTab('commands');return{none:true,label:'Showing commands'}}});
+add('Control',['create gesture','new gesture','record gesture','make new gesture','add gesture'],[],{fn:()=>{openCreator();return{none:true,label:'Opening gesture creator'}}});
+add('Control',['random','surprise me','anything','do something','random gesture'],[],{fn:()=>{
+  const pool=CMDS.filter(c=>!c.fn&&c.cat!=='Control'&&c.cat!=='Counting'&&c.cat!=='Single finger');const c=pool[Math.floor(Math.random()*pool.length)];
+  return{steps:c.steps,label:'Random \u2192 '+c.names[0]}}});
+
+/* ---------- sending (identical to the remote page) ---------- */
+let lastCode='',chain=Promise.resolve(),token=0,speedMul=1,lastRun=null;
+function getCode(){
+  let c='';try{if(typeof currentUserCode!=='undefined'&&currentUserCode)c=currentUserCode}catch(e){}
+  c=c||lastCode||localStorage.getItem('zippyCurrentUserCode')||'';
+  if(!c){try{const st=JSON.parse(localStorage.getItem('zippyCrossPageState_v1')||'null');if(st&&st.currentUserCode)c=String(st.currentUserCode)}catch(e){}}
+  if(!c)c=(window.prompt('Enter your Zippy device code (the same one used on the remote page):')||'').trim();
+  if(c){lastCode=c;try{localStorage.setItem('zippyCurrentUserCode',c)}catch(e){}}
+  return c;
+}
+function send(pose){
+  const run=chain.catch(()=>{}).then(async()=>{
+    const code=getCode();if(!code)throw new Error('Device code needed');
+    const fields={};Object.keys(pose).forEach(id=>{if(FIELD[id]&&pose[id]!=null&&isFinite(pose[id])){fields[FIELD[id]]=toMotor(id,pose[id])}});
+    const write=()=>db.ref('users/'+code+'/command').set(Object.assign({name:'finger_angles'},fields,{ts:firebase.database.ServerValue.TIMESTAMP}));
+    try{if(auth.authStateReady)await auth.authStateReady()}catch(e){}
+    if(!auth.currentUser)throw new Error('Not signed in on this site \u2013 sign in on the main page first');
+    await write();Object.assign(live,pose);
+    return fields;
+  });
+  chain=run;return run;
+}
+function play(steps,label){
+  const my=++token;
+  return new Promise(res=>{(async()=>{
+    let first=true;
+    for(let i=0;i<steps.length;i++){
+      if(my!==token)break;
+      try{await send(steps[i].pose);if(first){first=false;res({ok:true,label})}}
+      catch(e){const m='Not sent: '+((e&&e.message)||e);if(first){first=false;res({ok:false,label,reason:m})}else toast(m);return}
+      const d=Math.round((steps[i].d||0)*speedMul);
+      if(d&&i<steps.length-1)await sleep(d);
+    }
+    if(first)res({ok:true,label});
+  })()});
+}
+
+/* ---------- custom gestures ---------- */
+const KEY='zippyVoiceGestures_v1';
+function loadCustom(){try{const l=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(l)?l:[]}catch(e){return[]}}
+function saveCustom(l){try{localStorage.setItem(KEY,JSON.stringify(l));return true}catch(e){return false}}
+const customCmds=()=>loadCustom().map(g=>({cat:'My gestures',names:g.names&&g.names.length?g.names:[g.name],custom:true,gid:g.id,label:g.name,
+  steps:(g.sequence||[]).map(s=>st(s.pose,s.delay))}));
+window.__zippyHub={loadCustom};
+
+/* ---------- understanding speech ---------- */
+const norm=t=>String(t||'').toLowerCase().replace(/[\u2019']/g,'').replace(/&/g,' and ').replace(/[^a-z0-9% ]+/g,' ').replace(/\s+/g,' ').trim();
+const WAKE=new Set(['zippy','zippi','zippie','zipi','zipy','zippey','sippy','zeppy','ziggy','zip']);
+const LEAD=new Set('hey hi hello ok okay please kindly can could would will you just i want need to do does make show me perform give a an the lets let us go ahead now so my your for and also like'.split(' '));
+const TRAIL=/\s(?:please|now|gesture|sign|pose|action|command|for me|right now|thanks)$/;
+/* common speech-recognition mishearings -> the intended command wording */
+const NUMW='one|two|three|four|five|six|seven|eight|nine|ten|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred';
+const FIXES=[
+  [new RegExp('\\b(?:rest|rist|wrest|wrists|risk|rice)\\b(?=\\s+(?:(?:to|at|by)\\s+)?(?:left|right|center|centre|flat|straight|clockwise|anticlockwise|anti clockwise|full|max|\\d|(?:'+NUMW+')\\b))','g'),'wrist'],
+  [/\b(turn|rotate|spin|twist|move|bend|flip)\s+(?:the |my )?(?:rest|rist|wrest|risk)\b/g,'$1 wrist'],
+  [/\bfor arm\b|\bfour arm\b|\bfore arm\b|\bfor harm\b/g,'forearm'],
+  [/\bshoulder (?:left|lift) (?=\d)/g,'shoulder lift '],
+  [/\bpiece\b|\bpeas\b|\bpeace sign\b|\bpeas sign\b/g,'peace'],
+  [/\bthumbs? (?:app|up\b)/g,'thumbs up'],
+  [/\bthumbs? (?:down|dawn)\b/g,'thumbs down'],
+  [/\bhi (?:five|5)\b|\bhigh 5\b/g,'high five'],
+  [/\bokey\b|\boakay\b|\bo k\b/g,'okay'],
+  [/\bwaive\b|\bwaiv\b|\bwayve\b|\bwav(e|ing)?\b/g,'wave'],
+  [/\bopen hands?\b/g,'open hand'],
+  [/\bclose hands?\b/g,'close hand'],
+  [/\braise (?:my|the) arm\b/g,'raise arm'],
+  [/\blower (?:my|the) arm\b/g,'lower arm'],
+  [/\bput (?:my|the) arm down\b/g,'put arm down'],
+  [/\bill love you\b/g,'i love you'],
+  [/\bspider man\b/g,'spiderman']
+];
+const fix=s=>FIXES.reduce((t,[re,to])=>t.replace(re,to),s);
+const NW={zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90};
+const digits=s=>s.replace(/\b(?:(?:one|a) hundred|(?:twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?: (?:one|two|three|four|five|six|seven|eight|nine))?|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen)\b/g,m=>/hundred/.test(m)?'100':String(m.split(' ').reduce((a,w)=>a+NW[w],0)));
+function lev(a,b){const m=a.length,n=b.length;if(!m)return n;const d=[];for(let j=0;j<=n;j++)d[j]=j;
+  for(let i=1;i<=m;i++){let p=d[0];d[0]=i;for(let j=1;j<=n;j++){const t=d[j];d[j]=Math.min(d[j]+1,d[j-1]+1,p+(a[i-1]===b[j-1]?0:1));p=t}}return d[n]}
+function sim(a,b){if(!a||!b)return 0;const d=lev(a,b),m=Math.max(a.length,b.length);return m?1-d/m:1}
+function commandScore(text,alias){
+  const A=norm(text),B=norm(alias);if(!A||!B)return 0;
+  if(A===B)return 1;
+  if((' '+A+' ').includes(' '+B+' '))return .985;
+  const at=A.split(' '),bt=B.split(' '),compactA=at.join(''),compactB=bt.join('');
+  let best=sim(compactA,compactB)*.94;
+  const minW=Math.max(1,bt.length-1),maxW=Math.min(at.length,bt.length+2);
+  for(let L=minW;L<=maxW;L++)for(let i=0;i+L<=at.length;i++){
+    const w=at.slice(i,i+L).join(' '),c=sim(w,B);
+    if(c>best)best=c;
+  }
+  /* Token-aware score handles harmless fillers such as "my" between command words. */
+  const tokenScores=bt.map(q=>Math.max(...at.map(a=>sim(a,q))));
+  if(tokenScores.length){
+    const avg=tokenScores.reduce((x,y)=>x+y,0)/tokenScores.length;
+    const order=bt.every((q,qi)=>at.findIndex(a=>a===q)>=0 || qi===0 || at.findIndex(a=>a===q)>=at.findIndex(a=>a===bt[qi-1]));
+    best=Math.max(best,avg*(order?.94:.88));
+  }
+  return best;
+}
+
+let INDEX=new Map(),LIST=[];
+function rebuild(){
+  INDEX=new Map();LIST=[];
+  customCmds().concat(CMDS).forEach(cmd=>cmd.names.forEach(n=>{
+    const a=norm(n);if(!a)return;const sq=a.replace(/ /g,'');
+    if(!INDEX.has(a))INDEX.set(a,cmd);if(!INDEX.has(sq))INDEX.set(sq,cmd);LIST.push({a,sq,cmd});
+  }));
+  LIST.sort((x,y)=>y.sq.length-x.sq.length);
+}
+const exact=x=>x?(INDEX.get(x)||INDEX.get(x.replace(/ /g,''))||null):null;
+
+const JN={thumb:'thumb',index:'index','index finger':'index',pointer:'index',middle:'middle','middle finger':'middle',ring:'ring','ring finger':'ring',
+  pinky:'pinky',pinkie:'pinky','little finger':'pinky',wrist:'wrist-slider',elbow:'arm-slider',forearm:'arm-slider','fore arm':'arm-slider',arm:'arm-slider',
+  shoulder:'shoulder-slider','shoulder rotation':'shoulder-slider','shoulder rotate':'shoulder-slider','shoulder turn':'shoulder-slider',
+  lift:'abduction-slider','shoulder lift':'abduction-slider','shoulder raise':'abduction-slider','shoulder up':'abduction-slider','arm lift':'abduction-slider','arm raise':'abduction-slider',
+  extend:'extend-slider','extend joint':'extend-slider',fingers:'ALL','all fingers':'ALL'};
+const JSPEC=new RegExp('\\b('+Object.keys(JN).sort((a,b)=>b.length-a.length).map(k=>k.replace(/ /g,'\\s+')).join('|')+')(?:\\s+(?:finger|joint|angle|position))?(?:\\s+(?:to|at|by|around|about|of|is))*\\s*(?:the\\s+)?(\\d{1,3})(?:\\s*(percent|%|degrees?|deg))?','g');
+const TN={one:1,two:2,three:3},TENW='twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety';
+const numWords=s=>s
+  .replace(new RegExp('\\b(one|two|three)\\s+hundred(?:\\s+and)?(?:\\s+('+TENW+'))?(?:\\s+(one|two|three|four|five|six|seven|eight|nine))?\\b','g'),(m,h,t,o)=>String(TN[h]*100+(t?NW[t]:0)+(o?NW[o]:0)))
+  .replace(new RegExp('\\b(one|two|three)\\s+('+TENW+')\\b','g'),(m,h,t)=>String(TN[h]*100+NW[t]));
+/* degrees = the motor degrees shown in the Create-gesture sliders; convert back to the slider value */
+function uiFromMotor(id,m){
+  const c=CAL[id],u0=c.ui[0],u1=c.ui[1],s0=c.servo[0],s1=c.servo[1];
+  m=Math.max(Math.min(s0,s1),Math.min(Math.max(s0,s1),m));
+  if(c.neutral){const nu=c.neutral.ui,ns=c.neutral.servo;return m<=ns?nu-(nu-u0)*(m-ns)/(s0-ns):nu+(u1-nu)*(m-ns)/(s1-ns)}
+  return u0+(u1-u0)*(m-s0)/(s1-s0);
+}
+function param(t){
+  const T=digits(numWords(t)),pose={},labs=[];let m;JSPEC.lastIndex=0;
+  while((m=JSPEC.exec(T))){
+    const id=JN[m[1].replace(/\s+/g,' ')],v=Math.max(0,parseInt(m[2],10)),unit=m[3]||'',deg=/deg/.test(unit)||(!unit&&v>100);
+    const ids=id==='ALL'?['thumb','index','middle','ring','pinky']:[id];
+    ids.forEach(j=>{pose[j]=deg?Math.round(uiFromMotor(j,j==='wrist-slider'?Math.max(45,Math.min(95,v)):v)*10)/10:F(j,Math.min(100,v)/100)});
+    labs.push(m[1]+' '+v+(deg?'\u00b0':'%'));
+  }
+  if(!labs.length)return null;
+  const lab=labs.join(' + ');
+  return{cat:'Joint',names:[lab],label:lab,steps:[st(pose)],score:.99};
+}
+
+const TIMES={once:1,twice:2,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10};
+function strip(A){
+  const w=A.split(' '),cands=[];
+  const trail=x=>{let C=x,k=0;while(k++<3&&TRAIL.test(C)&&C.replace(TRAIL,'').trim())C=C.replace(TRAIL,'').trim();return C};
+  for(;;){const x=w.join(' ');cands.push(x);const t=trail(x);if(t!==x)cands.push(t);
+    if(w.length>1&&LEAD.has(w[0]))w.shift();else break}
+  return{cands,C:trail(w.join(' '))};
+}
+function fuzzyExact(A){
+  if(/^(?:wrist|forearm|elbow|shoulder|arm|lift|extend)$/.test(A))return null;
+  let best=null,bestScore=0,second=0;
+  for(const e of LIST){
+    const compact=e.a.replace(/ /g,'');
+    if(compact.length<4)continue;
+    const score=commandScore(A,e.a);
+    const threshold=compact.length<=5?.735:compact.length<=9?.69:.64;
+    if(score>=threshold){
+      if(score>bestScore+.0001){second=bestScore;bestScore=score;best=e}
+      else if(score>second)second=score;
+    }
+  }
+  /* Never guess from a weak/ambiguous near-match. */
+  if(best&&bestScore>=.70&&(bestScore-second>=.035||bestScore>=.88))return{cmd:best.cmd,score:bestScore};
+  return null;
+}
+const RELNAME={'arm-slider':'Forearm','abduction-slider':'Shoulder lift','shoulder-slider':'Shoulder turn','extend-slider':'Extend'};
+function rel(A){
+  const T=digits(numWords(A));
+  if(/\b(?:degrees?|deg)\b/.test(T))return null;
+  if(/\b(?:wrist|fingers?|thumbs?|index|middle|ring|pinky|pinkie|point|pointing|wave|salute)\b/.test(T))return null;
+  const fore=/\b(?:fore ?arm|elbow)\b/.test(T);
+  const body=/\b(?:shoulder|bicep|biceps|upper arm|arm)\b/.test(T);
+  const turn=/\b(?:turn|rotate|twist|spin)\b/.test(T);
+  const reach=/\b(?:reach|extend|extension|retract|forward|forwards)\b/.test(T);
+  const verb=/\b(?:lift|raise|lower|drop)\b/.test(T);
+  const upDown=/\b(?:up|down|sideways|side)\b/.test(T);
+  let id=null;
+  if(fore&&(verb||upDown||/\bstraighten\b/.test(T)))id='arm-slider';
+  else if(reach&&!turn)id='extend-slider';
+  else if(body&&turn&&!/\b(?:left|right)\b/.test(T))id='shoulder-slider';
+  else if(!fore&&!turn&&!reach&&(verb||(body&&upDown)))id='abduction-slider';
+  if(!id)return null;
+  const neg=/\b(?:lower|drop|down|retract|back|backward|backwards|untwist|unturn|straighten|decrease|reduce)\b/.test(T);
+  let pct=100,m;
+  if((m=/(\d{1,3})\s*(?:%|percent|per cent)/.exec(T)||/\b(\d{1,3})\b/.exec(T)))pct=Math.min(100,+m[1]);
+  else if(/\bhalf\b/.test(T))pct=50;else if(/\bquarter\b/.test(T))pct=25;
+  const dir=neg?-1:1,lab=RELNAME[id]+(dir>0?' +':' \u2212')+pct+'%';
+  const cmd={cat:'Joint',names:[lab],label:lab,steps:[],fn:ctx=>{
+    const base=Object.assign({},live,(ctx&&ctx.cur)||{}),u=CAL[id].ui;
+    const f0=c01((base[id]-u[0])/(u[1]-u[0])),f1=c01(f0+dir*pct/100);
+    return{steps:[st({[id]:u[0]+(u[1]-u[0])*f1})],label:lab+' \u2192 '+Math.round(f1*100)+'%'};
+  }};
+  return{cmd,n:1,spd:1,score:.99};
+}
+function single(A){
+  const rr=rel(A);if(rr)return rr;
+  const {cands,C}=strip(A);let c;
+  for(const x of cands)if(c=exact(x))return{cmd:c,n:1,spd:1,score:.99};
+  let n=1,spd=1,D=C;
+  const tm=/\b(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten) times?\b|\b(once|twice)\b/.exec(D);
+  if(tm){n=Math.min(10,/^\d/.test(tm[1]||'')?parseInt(tm[1],10):TIMES[tm[1]||tm[2]]);D=D.replace(tm[0],' ')}
+  if(/\b(slowly|slow)\b/.test(D)){spd=1.8;D=D.replace(/\b(slowly|slow)\b/g,' ')}
+  if(/\b(quickly|fast|rapidly|quick)\b/.test(D)){spd=.55;D=D.replace(/\b(quickly|fast|rapidly|quick)\b/g,' ')}
+  D=D.replace(/\s+/g,' ').trim();
+  if(D&&D!==C){for(const x of strip(D).cands)if(c=exact(x))return{cmd:c,n,spd,score:.99}}
+  if(c=param(C))return{cmd:c,n:1,spd:1,score:.99};
+
+  const target=D||C;
+  const f=fuzzyExact(target);
+  if(f)return{cmd:f.cmd,n,spd,score:f.score};
+
+  /* Scan useful n-grams before fuzzy matching the entire sentence. */
+  const tk=target.split(' ');
+  for(let L=Math.min(5,tk.length);L>=1;L--)for(let s=0;s+L<=tk.length;s++){
+    const ph=tk.slice(s,s+L).join(' ');
+    if(L===1&&(LEAD.has(ph)||(ph.length<3&&tk.length>2)))continue;
+    if(c=exact(ph))return{cmd:c,n,spd,score:.975};
+    const f2=fuzzyExact(ph);if(f2)return{cmd:f2.cmd,n,spd,score:f2.score};
+  }
+  return null;
+}
+const CONN=/\s+(?:(?:and\s+)?(?:then|after that|afterwards|followed by|next)|and)\s+/;
+const HOLD=/\b(?:in |at |with )?(?:the |that |this |current )?same (?:position|pose|place|spot)\b|\bin that (?:position|pose)\b|\bin place\b|\bthere\b|\bkeeping (?:it|that|the arm|position)\b|\bwhile holding\b/;
+const HOLDG=new RegExp(HOLD.source,'g');
+function partItem(p){
+  const hold=HOLD.test(p),t=p.replace(HOLDG,' ').replace(/\s+/g,' ').trim();
+  if(!t)return null;
+  const r=single(t);if(r)r.hold=hold;return r;
+}
+function resolve(text){
+  const A0=fix(norm(text)),A0Words=A0.split(' ').filter(Boolean),A=A0Words.filter(w=>!WAKE.has(w)).join(' ');
+  if(!A)return{wakeOnly:!!A0,items:[],score:1};
+  const wakeHeard=A0!==A;
+  const ex=strip(A).cands.map(exact).find(Boolean);
+  if(ex)return{items:[{cmd:ex,n:1,spd:1,score:.99}],score:.99};
+  const parts=A.split(CONN);
+  if(parts.length>1){const items=parts.map(partItem);if(items.every(Boolean))return{items,score:Math.min(...items.map(x=>x.score||.8))}}
+  const r=single(A);if(r)return{items:[r],score:r.score||.99};
+  const pad=' '+A+' ';
+  for(const e of LIST){if(e.sq.length>=4&&pad.includes(' '+e.a+' ')){
+    const tm=/\b(\d{1,2}|two|three|four|five) times\b|\b(twice)\b/.exec(A);
+    return{items:[{cmd:e.cmd,n:tm?Math.min(10,/^\d/.test(tm[1]||'')?parseInt(tm[1],10):TIMES[tm[1]||tm[2]]):1,spd:/\bslow/.test(A)?1.8:/\b(fast|quick)/.test(A)?.55:1}],score:.985}}}
+  /* n-gram fallback: find a command phrase anywhere in the sentence */
+  const tk=A.split(' ');
+  for(let L=Math.min(5,tk.length);L>=1;L--)for(let s=0;s+L<=tk.length;s++){
+    const ph=tk.slice(s,s+L).join(' ');
+    if(L===1&&(LEAD.has(ph)||(ph.length<3&&tk.length>2)))continue;
+    const c=exact(ph);if(c)return{items:[{cmd:c,n:1,spd:1}],score:.975};
+  }
+  return{items:[],wakeOnly:wakeHeard&&A.split(' ').every(w=>LEAD.has(w)),score:0};
+}
+
+async function handleSpeech(text,alts){
+  const candidates=[text,...(Array.isArray(alts)?alts:[])].map(x=>norm(x)).filter(Boolean);
+  const uniq=[...new Set(candidates)];
+  let r={items:[],score:0,wakeOnly:false};
+  uniq.forEach((candidate,index)=>{
+    const x=resolve(candidate);
+    if(x.items&&x.items.length){
+      const score=(x.score||.8)-(index*.004);
+      if(score>(r.score||0))r=Object.assign({},x,{score});
+    }
+  });
+  if(!r.items.length)return r.wakeOnly?{ok:true,label:'Listening \u2013 say a gesture'}:{ok:false,reason:'Heard \u201c'+text+'\u201d \u2013 not a known command'};
+  let steps=[],labels=[];
+  const cur={},ARMJ=['wrist-slider','arm-slider','shoulder-slider','abduction-slider','extend-slider'];let prevCat='';
+  for(const it of r.items){
+    let s=it.cmd.steps,label=it.cmd.label||it.cmd.names[0];
+    if(it.cmd.fn){const o=it.cmd.fn({hold:!!it.hold,cur:Object.assign({},cur)})||{};if(o.err){toast(o.err);return{ok:false,reason:o.err}}if(o.label)label=o.label;s=o.steps||[]}
+    if(s.length>1&&it.n>1){const rep=[];for(let k=0;k<it.n;k++)s.forEach(x=>rep.push(x));s=rep;label+=' \u00d7'+it.n}
+    if(it.hold&&!it.cmd.fn)s=s.map(x=>{const np=Object.assign({},x.pose);ARMJ.forEach(j=>{if(cur[j]!=null)np[j]=cur[j]});return{pose:np,d:x.d}});
+    s=s.map(x=>({pose:x.pose,d:x.d*it.spd}));
+    if(steps.length&&s.length)steps[steps.length-1].d=Math.max(steps[steps.length-1].d||0,(prevCat==='Joint'||prevCat==='Arm')?1500:650);
+    s.forEach(x=>Object.assign(cur,x.pose));if(s.length)prevCat=it.cmd.cat;
+    steps=steps.concat(s);labels.push(label);
+  }
+  const label=labels.join(' \u2192 ');
+  toast(label);
+  if(!steps.length)return{ok:true,label};
+  lastRun={steps,label};
+  return play(steps,label);
+}
+async function runName(name){const r=await handleSpeech(name);if(!r.ok)toast(r.reason||'Failed');return r}
+
+/* ---------- UI: Commands tab, My gestures tab, creator overlay ---------- */
+const tabsEl=document.querySelector('.qt-voice-tabs'),shell=document.querySelector('.qt-voice-shell');
+const toastEl=document.createElement('div');toastEl.id='zvToast';document.body.appendChild(toastEl);
+let tt;function toast(m){toastEl.textContent=m;toastEl.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>toastEl.classList.remove('show'),2400)}
+
+const cmdTab=document.createElement('button'),myTab=document.createElement('button');
+[[cmdTab,'qtVoiceCmdTab','Commands'],[myTab,'qtVoiceMyTab','My gestures']].forEach(([b,id,l])=>{b.className='qt-voice-tab';b.id=id;b.type='button';b.setAttribute('role','tab');b.textContent=l;tabsEl.appendChild(b)});
+const cmdPanel=document.createElement('section'),myPanel=document.createElement('section');
+cmdPanel.className=myPanel.className='qt-voice-panel zv-panel';cmdPanel.id='qtVoiceCmdPanel';myPanel.id='qtVoiceMyPanel';
+shell.appendChild(cmdPanel);shell.appendChild(myPanel);
+function showTab(w){
+  document.querySelectorAll('.qt-voice-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.qt-voice-panel').forEach(p=>p.classList.remove('active'));
+  (w==='commands'?cmdTab:myTab).classList.add('active');(w==='commands'?cmdPanel:myPanel).classList.add('active');
+  if(w==='commands')renderCmds();else renderMine();
+}
+cmdTab.addEventListener('click',()=>showTab('commands'));myTab.addEventListener('click',()=>showTab('mine'));
+['qtVoiceSpeakTab','qtVoiceHistoryTab'].forEach(id=>document.getElementById(id).addEventListener('click',()=>{
+  cmdTab.classList.remove('active');myTab.classList.remove('active');cmdPanel.classList.remove('active');myPanel.classList.remove('active')}));
+
+let filter='';
+function renderCmds(){
+  const cats={};customCmds().concat(CMDS).forEach(c=>{if(filter&&!(c.names.join(' ')+' '+c.cat).toLowerCase().includes(filter))return;(cats[c.cat]=cats[c.cat]||[]).push(c)});
+  const total=CMDS.length,phr=CMDS.reduce((a,c)=>a+c.names.length,0);
+  let h='<div class="zv-wrap"><div class="zv-intro"><b>'+total+' built-in commands</b> \u00b7 '+phr+' phrases. Say <i>\u201cHey Zippy, wave\u201d</i> or just <i>\u201cwave\u201d</i>. '+
+    'Add <i>\u201cthree times\u201d</i>, <i>\u201cslowly\u201d</i>, chain with <i>\u201cthen\u201d</i>, or set joints: <i>\u201celbow 50 percent\u201d</i>, <i>\u201cwrist 120 degrees\u201d</i>. Combine freely: <i>\u201copen hand and forearm 360 degrees and shoulder lift 130, then in the same position shake hand\u201d</i>.</div>'+
+    '<input class="zv-search" id="zvSearch" type="search" placeholder="Search commands\u2026" value="'+esc(filter)+'">';
+  Object.keys(cats).forEach(k=>{h+='<div class="zv-cat">'+esc(k)+' <span>'+cats[k].length+'</span></div>';
+    cats[k].forEach(c=>{h+='<div class="zv-row"><div class="zv-name"><b>'+esc(c.names[0])+'</b><small>'+esc(c.names.slice(1,7).join(' \u00b7 '))+'</small></div>'+
+      '<button type="button" class="zv-run" data-n="'+esc(c.names[0])+'">Run</button></div>'})});
+  cmdPanel.innerHTML=h+'</div>';
+  const s=document.getElementById('zvSearch');
+  s.addEventListener('input',()=>{filter=s.value.trim().toLowerCase();const p=s.selectionStart;renderCmds();const n=document.getElementById('zvSearch');n.focus();n.setSelectionRange(p,p)});
+}
+cmdPanel.addEventListener('click',e=>{const b=e.target.closest('.zv-run');if(b)runName(b.dataset.n)});
+
+function renderMine(){
+  const l=loadCustom();
+  let h='<div class="zv-wrap"><div class="zv-intro">Build a motion with the sliders, press <b>Save</b>, and its name becomes a voice command. '+
+    'Give it several names separated by commas (e.g. <i>spiderman, cool, yo</i>) and they all play the same gesture.</div>'+
+    '<button type="button" class="zv-create" id="zvCreate">+ Create gesture</button>';
+  if(!l.length)h+='<div class="zv-empty">No custom gestures yet.</div>';
+  l.forEach(g=>{const secs=Math.round((g.sequence||[]).reduce((a,s)=>a+(s.delay||0),0)/100)/10;
+    h+='<div class="zv-row">'+(g.cover?'<img class="zv-thumb" src="'+esc(g.cover)+'" alt="">':'<div class="zv-thumb"></div>')+
+      '<div class="zv-name"><b>'+esc(g.name)+'</b><small>say: '+esc((g.names||[g.name]).join(' \u00b7 '))+' \u00b7 '+(g.sequence||[]).length+' steps \u00b7 '+secs+'s</small></div>'+
+      '<span class="zv-btns"><button type="button" class="zv-run" data-g="'+esc(g.id)+'" data-a="run">Run</button>'+
+      '<button type="button" class="zv-run alt" data-g="'+esc(g.id)+'" data-a="names">Names</button>'+
+      '<button type="button" class="zv-run alt" data-g="'+esc(g.id)+'" data-a="del">Delete</button></span></div>'});
+  myPanel.innerHTML=h+'</div>';
+  document.getElementById('zvCreate').addEventListener('click',openCreator);
+}
+myPanel.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;
+  let l=loadCustom();const g=l.find(x=>x.id===b.dataset.g);if(!g)return;
+  if(b.dataset.a==='run')runName(g.names[0]);
+  if(b.dataset.a==='names'){const v=window.prompt('Spoken names (separate with commas):',(g.names||[g.name]).join(', '));
+    if(v){const n=v.split(/\s*[,;|\/]\s*/).map(s=>s.trim()).filter(Boolean);if(n.length){g.names=n;g.name=n[0];saveCustom(l);rebuild();renderMine();toast('Names updated')}}}
+  if(b.dataset.a==='del'&&window.confirm('Delete "'+g.name+'"?')){saveCustom(l.filter(x=>x.id!==g.id));rebuild();renderMine();toast('Deleted')}
+});
+
+const ov=document.createElement('div');ov.id='zvCreatorOverlay';
+ov.innerHTML='<div class="zv-cbar"><b>Create gesture</b><span>Move the joints, save positions, then Save Gesture \u2013 its name is the phrase you say.</span><button type="button" id="zvCreatorClose" aria-label="Close">\u2715</button></div><iframe id="zvCreatorFrame" title="Gesture creator"></iframe>';
+document.body.appendChild(ov);
+const frame=document.getElementById('zvCreatorFrame');
+function openCreator(){
+  ov.classList.add('open');
+  frame.srcdoc=document.getElementById('zvCreatorDoc').textContent.replace(/<\\\/script>/g,'<\/script>');
+}
+function closeCreator(){ov.classList.remove('open');try{frame.srcdoc='<!doctype html><html><body></body></html>'}catch(e){}}
+document.getElementById('zvCreatorClose').addEventListener('click',closeCreator);
+window.addEventListener('message',ev=>{
+  const m=ev.data;if(!m||typeof m!=='object'||(ev.source&&ev.source!==frame.contentWindow))return;
+  if(m.type==='zippy:save')onSaved(m.record);
+  else if(m.type==='zippy:close'||m.type==='zippy:done'){closeCreator();showTab('mine')}
+});
+function onSaved(rec){
+  if(!rec||!Array.isArray(rec.sequence))return;
+  const names=String(rec.name||'').split(/\s*[,;|\/]\s*|\s+or\s+/i).map(s=>s.trim()).filter(Boolean);
+  const seq=rec.sequence.filter(s=>s&&s.pose).map(s=>{const p={};Object.keys(FIELD).forEach(id=>{const v=+s.pose[id];if(s.pose[id]!=null&&isFinite(v))p[id]=v});return{name:s.name||'',pose:p,delay:Math.max(0,+s.delay||0)}});
+  if(!seq.length){toast('That gesture has no steps');return}
+  const g={id:rec.id||('g_'+Date.now()),name:names[0]||('gesture '+(Date.now()%1000)),names:names.length?names:['gesture '+(Date.now()%1000)],created:Date.now(),
+    cover:(rec.coverImage&&String(rec.coverImage).length<120000)?rec.coverImage:'',sequence:seq};
+  let l=loadCustom().filter(x=>norm(x.name)!==norm(g.name));l.push(g);
+  if(!saveCustom(l)){g.cover='';if(!saveCustom(l)){toast('Could not save \u2013 device storage is full');return}}
+  rebuild();renderMine();renderCmds();toast('Saved \u2013 say \u201c'+g.names[0]+'\u201d');
+}
+
+const empty=document.getElementById('qtVoiceEmptyState');
+if(empty)empty.innerHTML='<div class="zv-hello"><b>Say a gesture</b><br>\u201cHey Zippy, wave\u201d \u00b7 \u201cspiderman\u201d \u00b7 \u201cthumbs up\u201d \u00b7 \u201ctwo\u201d \u00b7 \u201celbow 50 percent\u201d<br><small>Open the <u>Commands</u> tab to see all '+CMDS.length+'.</small></div>';
+
+rebuild();
+window.ZV={toast,handleSpeech,resolve,runName,commands:CMDS,toMotor,openCreator,_norm:norm,_play:play,get speed(){return speedMul}};
+})();
+</script>
+<script>
+/* ---------- ESP32 port (same as main page) + hidden port picker + Back button ----------
+   Same baud rate and saved-port key as the main page; the port is actually
+   opened and re-opened on load. The ESP32 badge follows the port. */
+(function(){
+  var BAUD=115200, INFO_KEY='zippySerialPortInfo';
+  var supported=('serial' in navigator);
+  var port=null, reader=null, loop=null, open=false, busy=false;
+
+  window.zippyPortSupported=supported;
+  window.zippyPortIsOpen=function(){return open;};
+
+  function showState(){setConnectionIndicator(open?'online':'offline');}
+  async function readLoop(p){
+    while(p.readable&&port===p){
+      reader=p.readable.getReader();
+      try{ while(true){ var r=await reader.read(); if(r.done)break; } }catch(e){}
+      finally{ try{reader.releaseLock();}catch(e){} reader=null; }
+    }
+    if(port===p){ try{await p.close();}catch(e){} port=null; open=false; showState(); }
+  }
+  async function openPort(p){
+    await p.open({baudRate:BAUD});
+    try{await p.setSignals({dataTerminalReady:false,requestToSend:false});}catch(e){}
+    try{localStorage.setItem(INFO_KEY,JSON.stringify(p.getInfo?p.getInfo():{}));}catch(e){}
+    port=p; open=true; showState();
+    loop=readLoop(p);
+  }
+  function matchesSaved(p){
+    try{
+      var saved=JSON.parse(localStorage.getItem(INFO_KEY)||'{}');
+      var info=p.getInfo?p.getInfo():{};
+      if(!saved.usbVendorId)return true;
+      return saved.usbVendorId===info.usbVendorId&&saved.usbProductId===info.usbProductId;
+    }catch(e){return true;}
+  }
+  async function autoOpen(list){
+    if(open||busy)return;
+    busy=true;
+    try{
+      for(var i=0;i<list.length;i++){
+        if(!matchesSaved(list[i]))continue;
+        try{await openPort(list[i]);break;}catch(e){}
+      }
+    }finally{busy=false;}
+  }
+  window.zippyReleasePort=async function(){
+    var p=port; if(!p)return;
+    port=null; open=false;
+    try{if(reader)await reader.cancel();}catch(e){}
+    try{if(loop)await loop;}catch(e){}
+    try{await p.close();}catch(e){}
+  };
+
+  /* Discreet port picker: a tiny faded button in the bottom-right corner. */
+  var portBtn=document.createElement('button');
+  portBtn.type='button';
+  portBtn.textContent='\u2699';
+  portBtn.title='Select USB port';
+  portBtn.setAttribute('aria-label','Select USB port');
+  portBtn.style.cssText='position:fixed;right:10px;bottom:10px;z-index:2000;width:22px;height:22px;padding:0;border:0;border-radius:50%;background:transparent;color:#5b5f63;font-size:13px;line-height:1;cursor:pointer;opacity:.18;transition:opacity .2s';
+  portBtn.addEventListener('mouseenter',function(){portBtn.style.opacity='1';});
+  portBtn.addEventListener('mouseleave',function(){portBtn.style.opacity='.18';});
+  portBtn.addEventListener('click',async function(){
+    if(!supported)return;
+    if(open){await window.zippyReleasePort();showState();return;}   // click again = disconnect
+    try{
+      var p=await navigator.serial.requestPort();   // pick the ESP32 once
+      await openPort(p);
+    }catch(e){}
+  });
+  document.body.appendChild(portBtn);
+
+  if(supported){
+    navigator.serial.addEventListener('connect',function(e){autoOpen([e.target]);});
+    navigator.serial.addEventListener('disconnect',function(e){
+      if(e.target===port){var p=port;port=null;open=false;try{p.close();}catch(x){} showState();}
+    });
+    navigator.serial.getPorts().then(autoOpen).then(showState).catch(function(){});
+  }
+
+  /* Back button: smooth fade, same tab; port is released first so the main page can re-open it. */
+  var b=document.getElementById('qtVoiceCloseBtn');
+  if(b){
+    var dest=b.getAttribute('data-href');
+    document.documentElement.style.transition='opacity .25s ease';
+    window.addEventListener('click',function(e){
+      if(!(e.target&&e.target.closest&&e.target.closest('#qtVoiceCloseBtn')))return;
+      e.preventDefault();
+      e.stopImmediatePropagation();   // replaces the old close handler
+      document.documentElement.style.opacity='0';
+      var go=false;function leave(){if(go)return;go=true;window.location.href=dest;}
+      var fade=new Promise(function(r){setTimeout(r,250);});
+      var rel=Promise.resolve(window.zippyReleasePort()).catch(function(){});
+      Promise.all([fade,rel]).then(leave);
+      setTimeout(leave,1500);
+    },true);
+    window.addEventListener('pageshow',function(ev){if(ev.persisted)document.documentElement.style.opacity='1';});
+  }
+})();
+</script>
+</body>
+</html>
